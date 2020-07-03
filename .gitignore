@@ -1,3 +1,5 @@
 
 sds_wallpad/options_standalone.json
 *.backup
+sds_wallpad/log/
+sds_wallpad/run.sh
