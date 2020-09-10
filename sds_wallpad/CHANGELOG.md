@@ -1,5 +1,9 @@
 ## 수정 내역
 
+#### 5.5
+
+* socket에서 dump_mode 사용 가능하도록 수정
+
 #### 5.4
 
 * MQTT broker가 재시작했을 때, 재연결되면 다시 subscribe하도록 개선
