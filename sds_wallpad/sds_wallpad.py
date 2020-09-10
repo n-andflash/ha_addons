@@ -1086,14 +1086,15 @@ def dump_loop():
             except:
                 continue
 
-            for b in data:
-                if b == 0xA1 or len(logs) > 500:
-                    logger.info("".join(logs))
-                    logs = ["{:02X}".format(b)]
-                elif b <= 0xA0: logs.append(   "{:02X}".format(b))
-                elif b == 0xFF: logs.append(   "{:02X}".format(b))
-                elif b == 0xB0: logs.append( ": {:02X}".format(b))
-                else:           logs.append(",  {:02X}".format(b))
+            if data:
+                for b in data:
+                    if b == 0xA1 or len(logs) > 500:
+                        logger.info("".join(logs))
+                        logs = ["{:02X}".format(b)]
+                    elif b <= 0xA0: logs.append(   "{:02X}".format(b))
+                    elif b == 0xFF: logs.append(   "{:02X}".format(b))
+                    elif b == 0xB0: logs.append( ": {:02X}".format(b))
+                    else:           logs.append(",  {:02X}".format(b))
         logger.info("".join(logs))
         logger.warning("dump done.")
         conn.set_timeout(None)
