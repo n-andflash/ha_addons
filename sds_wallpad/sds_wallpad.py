@@ -120,7 +120,7 @@ RS485_DEVICE = {
     # 실시간에너지 0:전기, 1:가스, 2:수도
     "energy": {
         "query":    { "header": 0xAA6F, "length":  4, "id": 2, },
-        "state":    { "header": 0xB06F, "length":  7, "id": 2, "parse": {("current", 3, "4_2decimal")} },
+        "state":    { "header": 0xB06F, "length":  7, "id": 2, "parse": {("current", 3, "6decimal")} },
         "last":     { },
     },
 }
@@ -244,6 +244,7 @@ DISCOVERY_PAYLOAD = {
         "name": "_",
         "stat_t": "~/current/state",
         "unit_of_meas": "_",
+        "val_tpl": "_",
     } ],
 }
 
@@ -832,9 +833,9 @@ def serial_peek_value(parse, packet):
         pass
     elif pattern == "2Byte":
         value += packet[pos-1] << 8
-    elif pattern == "4_2decimal":
+    elif pattern == "6decimal":
         try:
-            value = float(packet[pos : pos+3].hex()) / 100
+            value = packet[pos : pos+3].hex()
         except:
             # 어쩌다 깨지면 뻗음...
             logger.warning("invalid packet, {} is not decimal".format(packet.hex()))
@@ -870,7 +871,8 @@ def serial_new_device(device, idn, packet):
             # 실시간 에너지 사용량에는 적절한 이름과 단위를 붙여준다 (단위가 없으면 그래프로 출력이 안됨)
             if device == "energy":
                 payload["name"] = "{}_{}_consumption".format(prefix, ("power", "gas", "water")[idn])
-                payload["unit_of_meas"] = ("Wh", "m³", "m³")[idn]
+                payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
+                payload["val_tpl"] = ("{{ value }}", "{{ value | float / 100 }}", "{{ value | float / 100 }}")[idn]
 
             mqtt_discovery(payload)
 
