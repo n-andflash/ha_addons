@@ -436,6 +436,9 @@ def init_option(argv):
             else:
                 Options[k] = Options2[k]
 
+    # internal options
+    Options["mqtt"]["_discovery"] = Options["mqtt"]["discovery"]
+
 
 def init_virtual_device():
     global virtual_watch
@@ -481,7 +484,7 @@ def mqtt_discovery(payload):
     # discovery에 등록
     topic = "homeassistant/{}/sds_wallpad/{}/config".format(intg, payload["name"])
     logger.info("Add new device:  {}".format(topic))
-    mqtt.publish(topic, json.dumps(payload), retain=True)
+    mqtt.publish(topic, json.dumps(payload))
 
 
 def mqtt_add_virtual():
@@ -498,7 +501,7 @@ def mqtt_add_virtual():
             # 트리거 초기 상태 설정
             topic = payload["~"] + "/state"
             logger.info("initial state:   {} = OFF".format(topic))
-            mqtt.publish(topic, "OFF", retain=True)
+            mqtt.publish(topic, "OFF")
 
     # 인터폰 장치 등록
     if Options["intercom_mode"] != "off":
@@ -513,16 +516,16 @@ def mqtt_add_virtual():
             # 트리거 초기 상태 설정
             topic = payload["~"] + "/state"
             logger.info("initial state:   {} = OFF".format(topic))
-            mqtt.publish(topic, "OFF", retain=True)
+            mqtt.publish(topic, "OFF")
 
         # 초인종 울리기 전까지 문열림 스위치 offline으로 설정
         payload = "offline"
         topic = "{}/virtual/intercom/public/available".format(prefix)
         logger.info("doorlock state:  {} = {}".format(topic, payload))
-        mqtt.publish(topic, payload, retain=True)
+        mqtt.publish(topic, payload)
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock state:  {} = {}".format(topic, payload))
-        mqtt.publish(topic, payload, retain=True)
+        mqtt.publish(topic, payload)
 
 
 def mqtt_virtual(topics, payload):
@@ -555,7 +558,7 @@ def mqtt_virtual(topics, payload):
     else:
         topic = "{}/virtual/{}/{}/state".format(prefix, device, trigger)
         logger.info("publish to HA:   {} = {}".format(topic, payload))
-        mqtt.publish(topic, payload, retain=True)
+        mqtt.publish(topic, payload)
 
     # 그동안 조용히 있었어도, 이젠 가로채서 응답해야 함
     if device == "entrance" and Options["entrance_mode"] == "minimal":
@@ -614,6 +617,17 @@ def mqtt_device(topics, payload):
     serial_queue[packet] = time.time()
 
 
+def mqtt_init_discovery():
+    # HA가 재시작됐을 때 모든 discovery를 다시 수행한다
+    Options["mqtt"]["_discovery"] = Options["mqtt"]["discovery"]
+    mqtt_add_virtual()
+    for device in RS485_DEVICE:
+        RS485_DEVICE[device]["last"] = {}
+
+    global last_topic_list
+    last_topic_list = {}
+
+
 def mqtt_on_message(mqtt, userdata, msg):
     topics = msg.topic.split("/")
     payload = msg.payload.decode()
@@ -621,7 +635,10 @@ def mqtt_on_message(mqtt, userdata, msg):
     logger.info("recv. from HA:   {} = {}".format(msg.topic, payload))
 
     device = topics[1]
-    if device == "virtual":
+    if device == "status":
+        if payload == "online":
+            mqtt_init_discovery()
+    elif device == "virtual":
         mqtt_virtual(topics, payload)
     elif device == "debug":
         mqtt_debug(topics, payload)
@@ -636,6 +653,12 @@ def mqtt_on_connect(mqtt, userdata, flags, rc):
         mqtt_connected = True
     else:
         logger.error("MQTT connection return with:  {}".format(connack_string(rc)))
+
+    mqtt_init_discovery()
+
+    topic = "homeassistant/status"
+    logger.info("subscribe {}".format(topic))
+    mqtt.subscribe(topic, 0)
 
     prefix = Options["mqtt"]["prefix"]
     if Options["entrance_mode"] != "off" or Options["intercom_mode"] != "off":
@@ -690,10 +713,10 @@ def virtual_enable(header_0, header_1):
         payload = "offline"
         topic = "{}/virtual/intercom/public/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
-        mqtt.publish(topic, payload, retain=True)
+        mqtt.publish(topic, payload)
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
-        mqtt.publish(topic, payload, retain=True)
+        mqtt.publish(topic, payload)
 
 
 def virtual_pop(device, trigger, cmd):
@@ -707,7 +730,7 @@ def virtual_pop(device, trigger, cmd):
     prefix = Options["mqtt"]["prefix"]
     topic = "{}/virtual/{}/{}/state".format(prefix, device, trigger)
     logger.info("publish to HA:   {} = {}".format(topic, "OFF"))
-    mqtt.publish(topic, "OFF", retain=True)
+    mqtt.publish(topic, "OFF")
 
     # minimal 모드일 때, 조용해질지 여부
     if not virtual_trigger[device] and Options["entrance_mode"] == "minimal":
@@ -891,7 +914,7 @@ def serial_receive_state(device, packet):
         return
 
     # 처음 받은 상태인 경우, discovery 용도로 등록한다.
-    if Options["mqtt"]["discovery"] and not last.get(idn):
+    if Options["mqtt"]["_discovery"] and not last.get(idn):
         # 전등 때문에 last query도 필요... 지금 패킷과 일치하는지 검증
         # gas valve는 일치하지 않는다
         if last_query[1] == packet[1] or device == "gas_valve":
@@ -917,7 +940,7 @@ def serial_receive_state(device, packet):
 
         if attr != "current":  # 전력사용량이나 현재온도는 너무 자주 바뀌어서 로그 제외
             logger.info("publish to HA:   {} = {} ({})".format(topic, value, packet.hex()))
-        mqtt.publish(topic, value, retain=True)
+        mqtt.publish(topic, value)
         last_topic_list[topic] = value
 
 
@@ -1054,9 +1077,9 @@ def serial_loop():
             # 돌만큼 돌았으면 상황 판단
             if loop_count == 30:
                 # discovery: 가끔 비트가 튈때 이상한 장치가 등록되는걸 막기 위해, 시간제한을 둠
-                if Options["mqtt"]["discovery"]:
+                if Options["mqtt"]["_discovery"]:
                     logger.info("Add new device:  All done.")
-                    Options["mqtt"]["discovery"] = False
+                    Options["mqtt"]["_discovery"] = False
                 else:
                     logger.info("running stable...")
 
@@ -1064,6 +1087,10 @@ def serial_loop():
                 if Options["serial_mode"] == "serial" and scan_count < 30:
                     logger.warning("initiate aggressive send mode!", scan_count)
                     send_aggressive = True
+
+            # HA 재시작한 경우
+            elif loop_count > 30 and Options["mqtt"]["_discovery"]:
+                loop_count = 1
 
         # 루프 카운트 세는데 실패하면 다른 걸로 시도해봄
         if loop_count == 0 and time.time() - start_time > 6:
@@ -1122,7 +1149,6 @@ if __name__ == "__main__":
     dump_loop()
 
     start_mqtt_loop()
-    mqtt_add_virtual()
 
     try:
         # 무한 루프
