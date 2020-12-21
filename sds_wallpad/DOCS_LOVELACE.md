@@ -407,3 +407,57 @@ type: history-graph
 ```
 
 </details>
+
+#### 시간당/일간/월간 누적사용량 확인
+
+![Lovelace 에너지사용량 구성 예제](images/lovelace_energy_example.png)
+
+* YAML 파일: [다운로드](yaml/sds_energy.yaml)
+* 우측 그래프는 HACS 에서 ["mini-graph-card" frontend](https://github.com/kalkih/mini-graph-card) 추가해서 사용 하였습니다.
+
+<details markdown="1">
+<summary>Lovelace 카드 (좌측)</summary>
+
+```yaml
+type: history-graph
+entities:
+  - entity: sensor.sds_power_daily
+  - entity: sensor.sds_gas_daily
+  - entity: sensor.sds_water_daily
+refresh_interval: 0
+hours_to_show: 96
+```
+
+</details>
+
+<details markdown="1">
+<summary>Lovelace 카드 (우측)</summary>
+
+```yaml
+type: vertical-stack
+cards:
+  - type: 'custom:mini-graph-card'
+    name: 일간 전력사용량
+    hours_to_show: 96
+    aggregate_func: last
+    group_by: date
+    lower_bound: 4
+    upper_bound: 16
+    entities:
+      - entity: sensor.sds_power_daily
+    show:
+      graph: bar
+  - type: 'custom:mini-graph-card'
+    name: 시간당 전력사용량
+    hours_to_show: 24
+    aggregate_func: last
+    group_by: hour
+    lower_bound: 0
+    upper_bound: 2
+    entities:
+      - entity: sensor.sds_power_hourly
+    show:
+      graph: bar
+```
+
+</details>
