@@ -1,14 +1,3 @@
-input_number:
-  sds_power_yesterday:
-    min: 0
-    max: 100
-  sds_water_yesterday:
-    min: 0
-    max: 100
-  sds_gas_yesterday:
-    min: 0
-    max: 100
-
 sensor:
   - platform: integration
     source: sensor.sds_power_consumption
