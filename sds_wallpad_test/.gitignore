@@ -1,0 +1,7 @@
+images/
+yaml/
+CHANGELOG.md
+DOCS_LOVELACE.md
+DOCS_PACKETS.md
+generate_options_standalone.py
+run_standalone.sh
