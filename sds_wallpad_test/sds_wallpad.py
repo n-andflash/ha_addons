@@ -62,6 +62,7 @@ VIRTUAL_DEVICE = {
     # 인터폰: 공동현관 문열림 기능 지원
     "intercom": {
         "header0": 0xA4,
+        "resp_size": 4,
         "default": {
             "init":    { "header1": 0x5A, "resp": 0xB05A006A, }, # 처음 전기가 들어왔거나 한동안 응답을 안했을 때, 이것부터 해야 함
             "query":   { "header1": 0x41, "resp": 0xB0410071, }, # 평상시
@@ -786,6 +787,7 @@ def virtual_query(header_0, header_1):
     device = header_0_virtual[header_0]
     query = VIRTUAL_DEVICE[device]["default"]["query"]["header1"]
     triggers = VIRTUAL_DEVICE[device]["trigger"]
+    resp_size = VIRTUAL_DEVICE[device]["resp_size"]
 
     # pending이 남은 상태면 지금 시도해봐야 가망이 없음
     if conn.check_pending_recv():
@@ -800,7 +802,7 @@ def virtual_query(header_0, header_1):
     if virtual_trigger[device] and header_1 == query:
         # 하나 뽑아서 보내봄
         trigger, cmd = next(iter(virtual_trigger[device]))
-        resp = triggers[trigger][cmd].to_bytes(4, "big")
+        resp = triggers[trigger][cmd].to_bytes(resp_size, "big")
         conn.send(resp)
 
         # retry time 관리, 초과했으면 제거

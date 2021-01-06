@@ -18,7 +18,7 @@
 
 ---
 
-![카카오톡 기부 QR코드](images/donation_kakao.png)
+![카카오톡 기부 QR코드](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/images/donation_kakao.png)
 * 카카오톡 기부 코드: https://qr.kakaopay.com/281006011000008548744237 (모바일에서만 가능)
 
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
