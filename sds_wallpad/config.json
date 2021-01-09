@@ -49,7 +49,7 @@
 	},
 	"schema": {
 		"serial_mode": "list(serial|socket)",
-		"entrance_mode": "list(full|minimal|off)",
+		"entrance_mode": "list(full|new|minimal|off)",
 		"wallpad_mode": "list(on|off)",
 		"intercom_mode": "list(on|off)",
 		"serial": {

@@ -16,6 +16,7 @@ VIRTUAL_DEVICE = {
     # 현관스위치: 엘리베이터 호출, 가스밸브 잠금 지원
     "entrance": {
         "header0": 0xAD,
+        "resp_size": 4,
         "default": {
             "init":  { "header1": 0x5A, "resp": 0xB05A006A, }, # 처음 전기가 들어왔거나 한동안 응답을 안했을 때, 이것부터 해야 함
             "query": { "header1": 0x41, "resp": 0xB0560066, }, # 여기에 0xB0410071로 응답하면 gas valve 상태는 전달받지 않음
@@ -34,9 +35,34 @@ VIRTUAL_DEVICE = {
         },
     },
 
+    # 신형 현관스위치
+    "entrance2": {
+        "header0": 0xCC,
+        "resp_size": 5,
+        "default": {
+            "init":  { "header1": 0x5A, "resp": 0xB05A01006B, }, # 처음 전기가 들어왔거나 한동안 응답을 안했을 때, 이것부터 해야 함
+            "query": { "header1": 0x41, "resp": 0xB041010070, }, # keepalive
+            "date":  { "header1": 0x01, "resp": 0xB001010030, }, # 스위치로 현재 날짜, 시각 전달
+            "broad": { "header1": 0x0B, "resp": 0xB00B01003A, }, # 다른 기기 상태 전달받음
+            "ukn12": { "header1": 0x12, "resp": 0xB041010070, }, # 엘리베이터 호출 결과?
+            "ukn09": { "header1": 0x09, "resp": 0xB009010038, },
+            "ukn07": { "header1": 0x07, "resp": 0xB007010137, },
+            "ukn02": { "header1": 0x02, "resp": 0xB041010070, },
+
+            # 성공 시 ack들, 무시해도 상관 없...으려나?
+            "eva":   { "header1": 0x10, "resp": 0xB041010070, },
+        },
+
+        # 0xCC41에 다르게 응답하는 방법들, 이 경우 월패드가 다시 ack를 보내준다
+        "trigger": {
+            "ev":    { "ack": 0x10, "ON": 0xB010010120, "next": None, },
+        },
+    },
+
     # 인터폰: 공동현관 문열림 기능 지원
     "intercom": {
         "header0": 0xA4,
+        "resp_size": 4,
         "default": {
             "init":    { "header1": 0x5A, "resp": 0xB05A006A, }, # 처음 전기가 들어왔거나 한동안 응답을 안했을 때, 이것부터 해야 함
             "query":   { "header1": 0x41, "resp": 0xB0410071, }, # 평상시
@@ -150,6 +176,16 @@ DISCOVERY_VIRTUAL = {
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:valve",
+        },
+    ],
+    "entrance2": [
+        {
+            "_intg": "switch",
+            "~": "{}/virtual/entrance2/ev",
+            "name": "{}_new_elevator",
+            "stat_t": "~/state",
+            "cmd_t": "~/command",
+            "icon": "mdi:elevator",
         },
     ],
     "intercom": [
@@ -443,14 +479,19 @@ def init_option(argv):
 def init_virtual_device():
     global virtual_watch
 
-    if Options["entrance_mode"] == "full":
-        header_0_virtual[VIRTUAL_DEVICE["entrance"]["header0"]] = "entrance"
-        virtual_trigger["entrance"] = {}
+    if Options["entrance_mode"] == "full" or Options["entrance_mode"] == "new":
+        if Options["entrance_mode"] == "new":
+            ent = "entrance2"
+        else:
+            ent = "entrance"
+
+        header_0_virtual[VIRTUAL_DEVICE[ent]["header0"]] = ent
+        virtual_trigger[ent] = {}
 
         # 평상시 응답할 항목 등록
         virtual_watch.update({
-            (VIRTUAL_DEVICE["entrance"]["header0"] << 8) + prop["header1"]: prop["resp"].to_bytes(4, "big")
-            for prop in VIRTUAL_DEVICE["entrance"]["default"].values()
+            (VIRTUAL_DEVICE[ent]["header0"] << 8) + prop["header1"]: prop["resp"].to_bytes(VIRTUAL_DEVICE[ent]["resp_size"], "big")
+            for prop in VIRTUAL_DEVICE[ent]["default"].values()
         })
 
         # full 모드에서 일괄소등 지원 안함
@@ -490,8 +531,13 @@ def mqtt_discovery(payload):
 def mqtt_add_virtual():
     # 현관스위치 장치 등록
     if Options["entrance_mode"] != "off":
+        if Options["entrance_mode"] == "new":
+            ent = "entrance2"
+        else:
+            ent = "entrance"
+
         prefix = Options["mqtt"]["prefix"]
-        for payloads in DISCOVERY_VIRTUAL["entrance"]:
+        for payloads in DISCOVERY_VIRTUAL[ent]:
             payload = payloads.copy()
             payload["~"] = payload["~"].format(prefix)
             payload["name"] = payload["name"].format(prefix)
@@ -741,6 +787,7 @@ def virtual_query(header_0, header_1):
     device = header_0_virtual[header_0]
     query = VIRTUAL_DEVICE[device]["default"]["query"]["header1"]
     triggers = VIRTUAL_DEVICE[device]["trigger"]
+    resp_size = VIRTUAL_DEVICE[device]["resp_size"]
 
     # pending이 남은 상태면 지금 시도해봐야 가망이 없음
     if conn.check_pending_recv():
@@ -755,7 +802,7 @@ def virtual_query(header_0, header_1):
     if virtual_trigger[device] and header_1 == query:
         # 하나 뽑아서 보내봄
         trigger, cmd = next(iter(virtual_trigger[device]))
-        resp = triggers[trigger][cmd].to_bytes(4, "big")
+        resp = triggers[trigger][cmd].to_bytes(resp_size, "big")
         conn.send(resp)
 
         # retry time 관리, 초과했으면 제거
