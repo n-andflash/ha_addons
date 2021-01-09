@@ -652,7 +652,7 @@ def mqtt_on_connect(mqtt, userdata, flags, rc):
         global mqtt_connected
         mqtt_connected = True
     else:
-        logger.error("MQTT connection return with:  {}".format(connack_string(rc)))
+        logger.error("MQTT connection return with:  {}".format(paho_mqtt.connack_string(rc)))
 
     mqtt_init_discovery()
 
