@@ -455,7 +455,9 @@ def init_option(argv):
     default_file = os.path.join(os.path.dirname(os.path.abspath(argv[0])), "config.json")
 
     with open(default_file) as f:
-        Options = json.load(f)["options"]
+        config = json.load(f)
+        logger.info("addon version {}".format(config["version"]))
+        Options = config["options"]
     with open(option_file) as f:
         Options2 = json.load(f)
 
