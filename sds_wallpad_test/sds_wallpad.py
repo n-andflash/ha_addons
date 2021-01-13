@@ -70,6 +70,8 @@ VIRTUAL_DEVICE = {
             "public":  { "header1": 0x32, "resp": 0xB0320002, }, # 공동현관 초인종 눌림
             "private": { "header1": 0x31, "resp": 0xB0310001, }, # 현관 초인종 눌림
             "opena":   { "header1": 0x36, "resp": 0xB0420072, }, # 통화 시작 요청 성공, 통화중이라고 ack 보내기
+            "vopena":  { "header1": 0x38, "resp": 0xB0420072, }, # 영상통화 시작 요청 성공, 통화중이라고 ack 보내기
+            "vconna":  { "header1": 0x35, "resp": 0xB0350005, }, # 영상 전송 시작됨
             "open2a":  { "header1": 0x3B, "resp": 0xB0420072, }, # 문열림 요청 성공, 통화중이라고 ack 보내기
             "end":     { "header1": 0x3E, "resp": 0xB03EFFFF, }, # 상황 종료, Byte[2] 가 반드시 일치해야 함
         },
@@ -77,9 +79,11 @@ VIRTUAL_DEVICE = {
         "trigger": {
             "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public2", "ON"), }, # 통화 시작
             "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("end", "ON"), }, # 문열림
+            "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 영상통화 시작
+            "privat2": { "ack": 0x3B, "ON": 0xB03B000B, "next": ("end", "ON"), }, # 현관 문열림
             "end":     { "ack": 0x3E, "ON": 0xB0420072, "next": None, }, # 문열림 후, 통화 종료 알려줄때까지 통화상태로 유지
         },
-    }
+    },
 }
 
 ####################
@@ -198,6 +202,32 @@ DISCOVERY_VIRTUAL = {
             "cmd_t": "~/command",
             "icon": "mdi:door-closed",
         },
+        {
+            "_intg": "switch",
+            "~": "{}/virtual/intercom/private",
+            "name": "{}_intercom_private",
+            "stat_t": "~/state",
+            "cmd_t": "~/command",
+            "icon": "mdi:door-closed",
+        },
+        {
+            "_intg": "binary_sensor",
+            "~": "{}/virtual/intercom/public",
+            "name": "{}_intercom_public",
+            "dev_cla": "sound",
+            "stat_t": "~/available",
+            "pl_on": "online",
+            "pl_off": "offline",
+        },
+        {
+            "_intg": "binary_sensor",
+            "~": "{}/virtual/intercom/private",
+            "name": "{}_intercom_private",
+            "dev_cla": "sound",
+            "stat_t": "~/available",
+            "pl_on": "online",
+            "pl_off": "offline",
+        },
     ],
 }
 
@@ -206,6 +236,7 @@ DISCOVERY_PAYLOAD = {
         "_intg": "light",
         "~": "{prefix}/light",
         "name": "_",
+        "opt": True,
         "stat_t": "~/{idn}/power{bit}/state",
         "cmd_t": "~/{id2}/power/command",
     } ],
@@ -213,6 +244,7 @@ DISCOVERY_PAYLOAD = {
         "_intg": "fan",
         "~": "{prefix}/fan/{idn}",
         "name": "{prefix}_fan_{idn}",
+        "opt": True,
         "stat_t": "~/power/state",
         "cmd_t": "~/power/command",
         "spd_stat_t": "~/speed/state",
@@ -455,7 +487,9 @@ def init_option(argv):
     default_file = os.path.join(os.path.dirname(os.path.abspath(argv[0])), "config.json")
 
     with open(default_file) as f:
-        Options = json.load(f)["options"]
+        config = json.load(f)
+        logger.info("addon version {}".format(config["version"]))
+        Options = config["options"]
     with open(option_file) as f:
         Options2 = json.load(f)
 
@@ -698,7 +732,7 @@ def mqtt_on_connect(mqtt, userdata, flags, rc):
         global mqtt_connected
         mqtt_connected = True
     else:
-        logger.error("MQTT connection return with:  {}".format(connack_string(rc)))
+        logger.error("MQTT connection return with:  {}".format(paho_mqtt.connack_string(rc)))
 
     mqtt_init_discovery()
 
