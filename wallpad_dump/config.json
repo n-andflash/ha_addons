@@ -1,5 +1,5 @@
 {
-	"version": "0.1",
+	"version": "0.2",
 	"slug": "wallpad_dump",
 	"name": "Wallpad RS485 Packet Dump",
 	"description": "월패드 패킷 분석을 위한 애드온입니다.",

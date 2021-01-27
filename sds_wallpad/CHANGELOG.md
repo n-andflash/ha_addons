@@ -1,5 +1,9 @@
 ## 수정 내역
 
+#### 8.1
+
+* Docker base image를 $BUILD_PROM (alpine) 에서 python:3 로 변경 (라즈베리파이 설치 오류 대응)
+
 ### 8
 
 * 현관 문열림 기능 추가

@@ -56,6 +56,7 @@
 #### baudrate, bytesize, parity, stopbits (기본값 9600, 8, N, 1)
 * 국내 대부분 월패드는 9600 8N1을 사용하며, 삼성SDS의 경우 9600 8E1을 사용합니다.
 * 사용 가능한 parity: E, O, N, M, S (Even, Odd, None, Mark, Space)
+* socket 사용시에는 여기가 아닌 EW11 설정 페이지에서 수정하셔야 합니다.
 
 ### socket: (serial\_mode 가 socket 인 경우)
 
