@@ -11,7 +11,7 @@
 
 ## 소개
 
-* [버전별 변경 사항](https://github.com/n-andflash/ha_addons/raw/master/wallpad_dump/LCHANGELOG.md)
+* [버전별 변경 사항](https://github.com/n-andflash/ha_addons/raw/master/wallpad_dump/CHANGELOG.md)
 
 * HA 환경에서 serial(USB to RS485 등)이나 socket(EW11 등) 방식으로 RS485 패킷을 확인할 수 있는 애드온입니다.
 * HA 머신에 USB to RS485가 연결되어 있을 때 SerialPortMon을 사용하기 어려운 점을 개선하고자 만들었습니다.
