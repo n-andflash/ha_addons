@@ -425,7 +425,7 @@ class SDSSocket:
     def recv(self, count=1):
         # socket은 버퍼와 in_waiting 직접 관리
         if len(self._recv_buf) < count:
-            new_data = self._recv_raw(1024)
+            new_data = self._recv_raw(256)
             self._recv_buf.extend(new_data)
         if len(self._recv_buf) < count:
             return None
@@ -446,6 +446,9 @@ class SDSSocket:
         return self._pending_recv
 
     def check_in_waiting(self):
+        if len(self._recv_buf) == 0:
+            new_data = self._recv_raw(256)
+            self._recv_buf.extend(new_data)
         return len(self._recv_buf)
 
     def set_timeout(self, a):
@@ -1209,7 +1212,7 @@ def dump_loop():
         logs = []
         while time.time() - start_time < dump_time:
             try:
-                data = conn.recv(1024)
+                data = conn.recv(256)
             except:
                 continue
 
