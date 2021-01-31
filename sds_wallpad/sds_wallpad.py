@@ -80,7 +80,9 @@ VIRTUAL_DEVICE = {
         "trigger": {
             "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public2", "ON"), }, # 통화 시작
             "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("end", "ON"), }, # 문열림
-            "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 영상통화 시작
+            "priv_a":  { "ack": 0x36, "ON": 0xB0360107, "next": ("privat2", "ON"), }, # 현관 통화 시작 (초인종 울렸을 때)
+            "priv_b":  { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
+            "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
             "privat2": { "ack": 0x3B, "ON": 0xB03B000B, "next": ("end", "ON"), }, # 현관 문열림
             "end":     { "ack": 0x3E, "ON": 0xB0420072, "next": None, }, # 문열림 후, 통화 종료 알려줄때까지 통화상태로 유지
         },
@@ -800,11 +802,14 @@ def virtual_enable(header_0, header_1):
         topic = "{}/virtual/intercom/public/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
+
     elif header_1 == 0x31:
         payload = "online"
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
+        VIRTUAL_DEVICE["intercom"]["trigger"]["private"] = VIRTUAL_DEVICE["intercom"]["trigger"]["priv_a"]
+
     elif header_1 == 0x36 or header_1 == 0x3E:
         payload = "offline"
         topic = "{}/virtual/intercom/public/available".format(prefix)
@@ -813,6 +818,7 @@ def virtual_enable(header_0, header_1):
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
+        VIRTUAL_DEVICE["intercom"]["trigger"]["private"] = VIRTUAL_DEVICE["intercom"]["trigger"]["priv_b"]
 
 
 def virtual_pop(device, trigger, cmd):
