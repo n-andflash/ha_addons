@@ -1198,6 +1198,10 @@ def dump_loop():
     dump_time = Options["rs485"]["dump_time"]
 
     if dump_time > 0:
+        if dump_time < 10:
+            logger.warning("dump_time is too short! automatically changed to 10 seconds...")
+            dump_time = 10
+
         start_time = time.time()
         logger.warning("packet dump for {} seconds!".format(dump_time))
 
