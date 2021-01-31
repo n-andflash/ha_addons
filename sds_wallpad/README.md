@@ -14,7 +14,7 @@
 
 ## 소개
 
-* [버전별 변경 사항](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/CHANGELOG.md)
+* [버전별 변경 사항](https://github.com/n-andflash/ha_addons/blob/master/sds_wallpad/CHANGELOG.md)
 
 * 삼성SDS 월패드를 사용하는 집에서, RS485를 이용해 여러 장치들을 제어할 수 있는 애드온입니다.
 * 현관 스위치를 대신하여 엘리베이터를 호출하는 기능이 있습니다.
@@ -91,7 +91,7 @@
 ### 4. Lovelace 구성 예제
 
 ![Lovelace 구성 예제](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/images/lovelace_example.png)
-* [설정 방법 보러가기](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/DOCS_LOVELACE.md)
+* [설정 방법 보러가기](https://github.com/n-andflash/ha_addons/blob/master/sds_wallpad/DOCS_LOVELACE.md)
 * 월패드에 연결되지 않은 기능은 사용하실 수 없습니다.
 
 ## 설정
@@ -190,7 +190,7 @@
 
 [Github issue 페이지 (버그 신고, 수정 제안 등)](https://github.com/n-andflash/ha_addons/issues)
 
-[삼성SDS 월패드 RS485 패킷 분석](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/DOCS_PACKETS.md)
+[삼성SDS 월패드 RS485 패킷 분석](https://github.com/n-andflash/ha_addons/blob/master/sds_wallpad/DOCS_PACKETS.md)
 
 ## 면책조항 (Disclaimer)
 
