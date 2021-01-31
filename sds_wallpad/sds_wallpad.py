@@ -10,6 +10,7 @@ import time
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os.path
+import re
 
 ####################
 VIRTUAL_DEVICE = {
@@ -506,6 +507,11 @@ def init_option(argv):
             else:
                 Options[k] = Options2[k]
 
+    # 관용성 확보
+    Options["mqtt"]["server"] = re.sub("[a-z]*://", "", Options["mqtt"]["server"])
+    if Options["mqtt"]["server"] == "127.0.0.1":
+        logger.warning("MQTT server address should be changed!")
+
     # internal options
     Options["mqtt"]["_discovery"] = Options["mqtt"]["discovery"]
 
@@ -758,13 +764,20 @@ def mqtt_on_disconnect(mqtt, userdata, rc):
 
 
 def start_mqtt_loop():
+    logger.info("initialize mqtt...")
+
     mqtt.on_message = mqtt_on_message
     mqtt.on_connect = mqtt_on_connect
     mqtt.on_disconnect = mqtt_on_disconnect
 
     if Options["mqtt"]["need_login"]:
         mqtt.username_pw_set(Options["mqtt"]["user"], Options["mqtt"]["passwd"])
-    mqtt.connect(Options["mqtt"]["server"], Options["mqtt"]["port"])
+
+    try:
+        mqtt.connect(Options["mqtt"]["server"], Options["mqtt"]["port"])
+    except Exception as e:
+        logger.error("MQTT server address/port may be incorrect! ({})".format(str(e)))
+        sys.exit(1)
 
     mqtt.loop_start()
 
