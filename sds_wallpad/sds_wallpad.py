@@ -426,11 +426,9 @@ class SDSSocket:
 
     def recv(self, count=1):
         # socket은 버퍼와 in_waiting 직접 관리
-        if len(self._recv_buf) < count:
+        while len(self._recv_buf) < count:
             new_data = self._recv_raw(256)
             self._recv_buf.extend(new_data)
-        if len(self._recv_buf) < count:
-            return None
 
         self._pending_recv = max(self._pending_recv - count, 0)
 
