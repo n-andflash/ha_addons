@@ -1,5 +1,5 @@
 {
-	"version": "210106a",
+	"version": "210403a",
 	"slug": "sds_wallpad_test",
 	"name": "Samsung SDS RS485 Addon Test",
 	"description": "삼성 SDS 월패드용 애드온의 임시 배포 버전입니다. 필요한 경우에만 사용합니다.",
@@ -8,7 +8,7 @@
 	"boot": "auto",
 	"arch": [ "armhf", "armv7", "aarch64", "amd64", "i386" ],
 
-	"auto_uart": true,
+	"uart": true,
 	"map": [ "share:rw" ],
 
 	"options": {

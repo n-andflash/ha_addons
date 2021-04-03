@@ -1,5 +1,10 @@
 ## 수정 내역
 
+#### 8.4
+
+* HA core 2021.2 의 변경사항으로 인한 warning 발생 수정
+	* 이번 버전부터는 HA core 2021.2 이후 버전이 필요합니다.
+
 #### 8.3
 
 * socket 사용시 exception 발생할 가능성 수정 (github issue #1 대응)

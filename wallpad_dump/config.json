@@ -1,5 +1,5 @@
 {
-	"version": "0.2",
+	"version": "0.3",
 	"slug": "wallpad_dump",
 	"name": "Wallpad RS485 Packet Dump",
 	"description": "월패드 패킷 분석을 위한 애드온입니다.",
@@ -8,7 +8,7 @@
 	"boot": "auto",
 	"arch": [ "armhf", "armv7", "aarch64", "amd64", "i386" ],
 
-	"auto_uart": true,
+	"uart": true,
 	"map": [ "share:rw" ],
 
 	"options": {
