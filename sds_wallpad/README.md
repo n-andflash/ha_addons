@@ -59,10 +59,13 @@
 
 * Mosquitto broker 설치
     1. 홈어시스턴트의 Supervisor --> Add-on store에서 Mosquitto broker 선택합니다.
-    2. INSTALL 후 START 합니다.
+    2. 설치하기를 누른 후 생기는 구성 탭을 누릅니다.
+    3. logins: [] 에 원하는 아이디와 비밀번호를 아래와 같은 형식으로 입력합니다. 저장하기를 누르면 자동으로 세 줄로 분리됩니다.
+        * logins: [{username: 아이디, password: 비밀번호}]
+    5. 정보 탭으로 돌아와 시작하기를 누릅니다.
 * MQTT Integration 설치
-    1. 홈어시스턴트의 설정 --> 통합 구성요소에서 우하단 추가( + ) 를 누른 후 MQTT를 검색하여 선택합니다.
-    2. "브로커" 에 HA의 IP주소 입력, "기기 검색 활성화" 후 확인을 누릅니다.
+    1. 홈어시스턴트의 구성하기 --> 통합 구성요소에서 우하단 추가( + ) 를 누른 후 MQTT를 검색하여 선택합니다.
+    2. "브로커" 에 HA의 IP주소 입력, "사용자 이름"과 "비밀번호"에 위 Mosquitto의 로그인 정보 입력, "기기 검색 활성화" 후 확인을 누릅니다.
 
 ### 2. 애드온 설치, 실행
 
@@ -144,10 +147,10 @@
 * Mosquitto의 포트 번호를 변경하셨다면 변경한 포트 번호를 적어주세요.
 
 #### `need_login`
-* Mosquitto에 login이 필요하도록 설정하셨으면 (anonymous: false) true로 수정해 주세요.
+* true로 수정해 주세요.
 
-#### user, passwd
-* need\_login이 true인 경우 Mosquitto의 아이디와 비밀번호를 적어주세요.
+#### `user, passwd`
+* Mosquitto의 아이디와 비밀번호를 적어주세요.
 
 #### discovery (true / false)
 * false로 변경하면 HA에 장치를 자동으로 등록하지 않습니다. 필요한 경우만 변경하세요.
