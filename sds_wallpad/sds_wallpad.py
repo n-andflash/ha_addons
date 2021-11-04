@@ -104,11 +104,11 @@ RS485_DEVICE = {
     # 환기장치 (전열교환기)
     "fan": {
         "query":    { "header": 0xC24E, "length":  6, },
-        "state":    { "header": 0xB04E, "length":  6, "parse": {("power", 4, "fan_toggle"), ("speed", 2, "value")} },
+        "state":    { "header": 0xB04E, "length":  6, "parse": {("power", 4, "fan_toggle"), ("preset", 2, "fan_speed")} },
         "last":     { },
 
         "power":    { "header": 0xC24F, "length":  6, "pos": 2, },
-        "speed":    { "header": 0xC24F, "length":  6, "pos": 2, },
+        "preset":   { "header": 0xC24F, "length":  6, "pos": 2, },
     },
 
     # 각방 난방 제어
@@ -250,14 +250,13 @@ DISCOVERY_PAYLOAD = {
         "opt": True,
         "stat_t": "~/power/state",
         "cmd_t": "~/power/command",
-        "spd_stat_t": "~/speed/state",
-        "spd_cmd_t": "~/speed/command",
+        "pr_mode_stat_t": "~/preset/state",
+        "pr_mode_cmd_t": "~/preset/command",
         "pl_on": 5,
         "pl_off": 6,
-        "pl_lo_spd": 3,
-        "pl_med_spd": 2,
-        "pl_hi_spd": 1,
-        "spds": ["low", "medium", "high"],
+        "pr_modes": ["low", "medium", "high", "auto"],
+        "spd_rng_min": 1,
+        "spd_rng_max": 3,
     } ],
     "thermostat": [ {
         "_intg": "climate",
@@ -683,11 +682,15 @@ def mqtt_device(topics, payload):
     if payload == "":
         logger.error("    no payload!"); return
 
-    # ON, OFF인 경우만 1, 0으로 변환, 복잡한 경우 (fan 등) 는 값으로 받자
-    if payload == "ON": payload = "1"
-    elif payload == "OFF": payload = "0"
-    elif payload == "heat": payload = "1"
-    elif payload == "off": payload = "0"
+    # 문자열 payload를 패킷으로 변환
+    payloads = {
+        "ON": 1, "OFF": 0,
+        "heat": 1, "off": 0, # 난방
+        "low": 3, "medium": 2, "high": 1, "auto": 4, # 환기
+    }
+
+    if payload in payloads:
+        payload = payloads[payload]
 
     # 오류 체크 끝났으면 serial 메시지 생성
     cmd = RS485_DEVICE[device][cmd]
@@ -949,6 +952,8 @@ def serial_peek_value(parse, packet):
         value = "ON" if value & 0x10 else "OFF"
     elif pattern == "fan_toggle":
         value = 5 if value == 0 else 6
+    elif pattern == "fan_speed":
+        value = ["", "high", "medium", "low", "auto"][value]
     elif pattern == "heat_toggle":
         value = "heat" if value & 1 else "off"
     elif pattern == "gas_toggle":
@@ -1037,7 +1042,7 @@ def serial_receive_state(device, packet):
     for attr, value in value_list:
         prefix = Options["mqtt"]["prefix"]
         topic = "{}/{}/{:x}/{}/state".format(prefix, device, idn, attr)
-        if last_topic_list.get(topic) == value: continue
+        if value == "" or last_topic_list.get(topic) == value: continue
 
         if attr != "current":  # 전력사용량이나 현재온도는 너무 자주 바뀌어서 로그 제외
             logger.info("publish to HA:   {} = {} ({})".format(topic, value, packet.hex()))
