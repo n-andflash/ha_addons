@@ -10,6 +10,7 @@ import time
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os.path
+import re
 
 ####################
 VIRTUAL_DEVICE = {
@@ -79,7 +80,9 @@ VIRTUAL_DEVICE = {
         "trigger": {
             "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public2", "ON"), }, # 통화 시작
             "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("end", "ON"), }, # 문열림
-            "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 영상통화 시작
+            "priv_a":  { "ack": 0x36, "ON": 0xB0360107, "next": ("privat2", "ON"), }, # 현관 통화 시작 (초인종 울렸을 때)
+            "priv_b":  { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
+            "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
             "privat2": { "ack": 0x3B, "ON": 0xB03B000B, "next": ("end", "ON"), }, # 현관 문열림
             "end":     { "ack": 0x3E, "ON": 0xB0420072, "next": None, }, # 문열림 후, 통화 종료 알려줄때까지 통화상태로 유지
         },
@@ -101,11 +104,11 @@ RS485_DEVICE = {
     # 환기장치 (전열교환기)
     "fan": {
         "query":    { "header": 0xC24E, "length":  6, },
-        "state":    { "header": 0xB04E, "length":  6, "parse": {("power", 4, "fan_toggle"), ("speed", 2, "value")} },
+        "state":    { "header": 0xB04E, "length":  6, "parse": {("power", 4, "fan_toggle"), ("preset", 2, "fan_speed")} },
         "last":     { },
 
         "power":    { "header": 0xC24F, "length":  6, "pos": 2, },
-        "speed":    { "header": 0xC24F, "length":  6, "pos": 2, },
+        "preset":   { "header": 0xC24F, "length":  6, "pos": 2, },
     },
 
     # 각방 난방 제어
@@ -247,14 +250,13 @@ DISCOVERY_PAYLOAD = {
         "opt": True,
         "stat_t": "~/power/state",
         "cmd_t": "~/power/command",
-        "spd_stat_t": "~/speed/state",
-        "spd_cmd_t": "~/speed/command",
+        "pr_mode_stat_t": "~/preset/state",
+        "pr_mode_cmd_t": "~/preset/command",
         "pl_on": 5,
         "pl_off": 6,
-        "pl_lo_spd": 3,
-        "pl_med_spd": 2,
-        "pl_hi_spd": 1,
-        "spds": ["low", "medium", "high"],
+        "pr_modes": ["low", "medium", "high", "auto"],
+        "spd_rng_min": 1,
+        "spd_rng_max": 3,
     } ],
     "thermostat": [ {
         "_intg": "climate",
@@ -423,11 +425,9 @@ class SDSSocket:
 
     def recv(self, count=1):
         # socket은 버퍼와 in_waiting 직접 관리
-        if len(self._recv_buf) < count:
-            new_data = self._recv_raw(1024)
+        while len(self._recv_buf) < count:
+            new_data = self._recv_raw(256)
             self._recv_buf.extend(new_data)
-        if len(self._recv_buf) < count:
-            return None
 
         self._pending_recv = max(self._pending_recv - count, 0)
 
@@ -445,6 +445,9 @@ class SDSSocket:
         return self._pending_recv
 
     def check_in_waiting(self):
+        if len(self._recv_buf) == 0:
+            new_data = self._recv_raw(256)
+            self._recv_buf.extend(new_data)
         return len(self._recv_buf)
 
     def set_timeout(self, a):
@@ -505,6 +508,11 @@ def init_option(argv):
                 logger.warning("no configuration value for '{}'! try default value ({})...".format(k, Options[k]))
             else:
                 Options[k] = Options2[k]
+
+    # 관용성 확보
+    Options["mqtt"]["server"] = re.sub("[a-z]*://", "", Options["mqtt"]["server"])
+    if Options["mqtt"]["server"] == "127.0.0.1":
+        logger.warning("MQTT server address should be changed!")
 
     # internal options
     Options["mqtt"]["_discovery"] = Options["mqtt"]["discovery"]
@@ -674,11 +682,15 @@ def mqtt_device(topics, payload):
     if payload == "":
         logger.error("    no payload!"); return
 
-    # ON, OFF인 경우만 1, 0으로 변환, 복잡한 경우 (fan 등) 는 값으로 받자
-    if payload == "ON": payload = "1"
-    elif payload == "OFF": payload = "0"
-    elif payload == "heat": payload = "1"
-    elif payload == "off": payload = "0"
+    # 문자열 payload를 패킷으로 변환
+    payloads = {
+        "ON": 1, "OFF": 0,
+        "heat": 1, "off": 0, # 난방
+        "low": 3, "medium": 2, "high": 1, "auto": 4, # 환기
+    }
+
+    if payload in payloads:
+        payload = payloads[payload]
 
     # 오류 체크 끝났으면 serial 메시지 생성
     cmd = RS485_DEVICE[device][cmd]
@@ -758,13 +770,20 @@ def mqtt_on_disconnect(mqtt, userdata, rc):
 
 
 def start_mqtt_loop():
+    logger.info("initialize mqtt...")
+
     mqtt.on_message = mqtt_on_message
     mqtt.on_connect = mqtt_on_connect
     mqtt.on_disconnect = mqtt_on_disconnect
 
     if Options["mqtt"]["need_login"]:
         mqtt.username_pw_set(Options["mqtt"]["user"], Options["mqtt"]["passwd"])
-    mqtt.connect(Options["mqtt"]["server"], Options["mqtt"]["port"])
+
+    try:
+        mqtt.connect(Options["mqtt"]["server"], Options["mqtt"]["port"])
+    except Exception as e:
+        logger.error("MQTT server address/port may be incorrect! ({})".format(str(e)))
+        sys.exit(1)
 
     mqtt.loop_start()
 
@@ -784,11 +803,14 @@ def virtual_enable(header_0, header_1):
         topic = "{}/virtual/intercom/public/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
+
     elif header_1 == 0x31:
         payload = "online"
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
+        VIRTUAL_DEVICE["intercom"]["trigger"]["private"] = VIRTUAL_DEVICE["intercom"]["trigger"]["priv_a"]
+
     elif header_1 == 0x36 or header_1 == 0x3E:
         payload = "offline"
         topic = "{}/virtual/intercom/public/available".format(prefix)
@@ -797,6 +819,7 @@ def virtual_enable(header_0, header_1):
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
+        VIRTUAL_DEVICE["intercom"]["trigger"]["private"] = VIRTUAL_DEVICE["intercom"]["trigger"]["priv_b"]
 
 
 def virtual_pop(device, trigger, cmd):
@@ -929,6 +952,8 @@ def serial_peek_value(parse, packet):
         value = "ON" if value & 0x10 else "OFF"
     elif pattern == "fan_toggle":
         value = 5 if value == 0 else 6
+    elif pattern == "fan_speed":
+        value = ["", "high", "medium", "low", "auto"][value]
     elif pattern == "heat_toggle":
         value = "heat" if value & 1 else "off"
     elif pattern == "gas_toggle":
@@ -1017,7 +1042,7 @@ def serial_receive_state(device, packet):
     for attr, value in value_list:
         prefix = Options["mqtt"]["prefix"]
         topic = "{}/{}/{:x}/{}/state".format(prefix, device, idn, attr)
-        if last_topic_list.get(topic) == value: continue
+        if value == "" or last_topic_list.get(topic) == value: continue
 
         if attr != "current":  # 전력사용량이나 현재온도는 너무 자주 바뀌어서 로그 제외
             logger.info("publish to HA:   {} = {} ({})".format(topic, value, packet.hex()))
@@ -1185,6 +1210,10 @@ def dump_loop():
     dump_time = Options["rs485"]["dump_time"]
 
     if dump_time > 0:
+        if dump_time < 10:
+            logger.warning("dump_time is too short! automatically changed to 10 seconds...")
+            dump_time = 10
+
         start_time = time.time()
         logger.warning("packet dump for {} seconds!".format(dump_time))
 
@@ -1192,7 +1221,7 @@ def dump_loop():
         logs = []
         while time.time() - start_time < dump_time:
             try:
-                data = conn.recv(1024)
+                data = conn.recv(256)
             except:
                 continue
 

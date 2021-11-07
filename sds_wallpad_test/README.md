@@ -14,12 +14,12 @@
 
 * 이 애드온은 무상으로 제공되므로 정확성이나 안정성 등 어떠한 보증도 제공하지 않습니다.
 * 이 애드온은 오픈소스로 실행 코드와 함께 배포되므로 코드 및 동작에 대한 확인 책임은 사용자에게 있습니다.
-* 기타 사항은 GPLv3를 따릅니다. [전문보기](LICENSE)
+* 기타 사항은 GPLv3를 따릅니다. [전문보기](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/LICENSE)
 
 ---
 
-![카카오톡 기부 QR코드](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/images/donation_kakao.png)
-* 카카오톡 기부 코드: https://qr.kakaopay.com/281006011000008548744237 (모바일에서만 가능)
+![카카오톡 후원 QR코드](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/images/donation_kakao.png)
+* 카카오톡 후원 코드: https://qr.kakaopay.com/281006011000008548744237 (모바일에서만 가능)
 
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg

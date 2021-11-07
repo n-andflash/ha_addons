@@ -1,5 +1,5 @@
 {
-	"version": "210403a",
+	"version": "9_211107a",
 	"slug": "sds_wallpad_test",
 	"name": "Samsung SDS RS485 Addon Test",
 	"description": "삼성 SDS 월패드용 애드온의 임시 배포 버전입니다. 필요한 경우에만 사용합니다.",
