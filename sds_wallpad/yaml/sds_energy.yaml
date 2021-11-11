@@ -8,13 +8,11 @@ sensor:
     source: sensor.sds_water_consumption
     method: left
     name: sds_water_integration
-    unit: 'm³'
     round: 2
   - platform: integration
     source: sensor.sds_gas_consumption
     method: left
     name: sds_gas_integration
-    unit: 'm³'
     round: 2
 
 utility_meter:
