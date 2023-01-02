@@ -706,6 +706,7 @@ def mqtt_device(topics, payload):
     packet[-1] = serial_generate_checksum(packet)
     packet = bytes(packet)
 
+    logger.info("D1 packet {} queue {}".format(packet, serial_queue))
     serial_queue[packet] = time.time()
 
 
@@ -1080,13 +1081,16 @@ def serial_ack_command(packet):
 
 
 def serial_send_command():
+    logger.info("D4")
     # 한번에 여러개 보내면 응답이랑 꼬여서 망함
     cmd = next(iter(serial_queue))
+    logger.info("D5 cmd {}".format(cmd))
     conn.send(cmd)
 
     ack = bytearray(cmd[0:3])
     ack[0] = 0xB0
     ack = int.from_bytes(ack, "big")
+    logger.info("D6 ack {}".format(ack))
 
     # retry time 관리, 초과했으면 제거
     elapsed = time.time() - serial_queue[cmd]
@@ -1147,6 +1151,8 @@ def serial_loop():
             if serial_queue and not conn.check_pending_recv():
                 serial_send_command()
                 conn.set_pending_recv()
+            elif serial_queue:
+                logger.info("D3 pending {}".format(conn.check_pending_recv()))
 
             # 적절히 처리한다
             serial_receive_state(device, packet)
@@ -1174,6 +1180,8 @@ def serial_loop():
             if serial_queue and not conn.check_pending_recv():
                 serial_send_command()
                 conn.set_pending_recv()
+            elif serial_queue:
+                logger.info("D2 pending {}".format(conn.check_pending_recv()))
 
         # 전체 루프 수 카운트
         global HEADER_0_FIRST
