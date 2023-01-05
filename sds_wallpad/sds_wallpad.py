@@ -963,12 +963,7 @@ def serial_peek_value(parse, packet):
     elif pattern == "2Byte":
         value += packet[pos-1] << 8
     elif pattern == "6decimal":
-        try:
-            value = packet[pos : pos+3].hex()
-        except:
-            # 어쩌다 깨지면 뻗음...
-            logger.warning("invalid packet, {} is not decimal".format(packet.hex()))
-            value = 0
+        value = packet[pos : pos+3].hex()
 
     return [(attr, value)]
 
@@ -980,7 +975,10 @@ def serial_new_device(device, idn, packet):
     if device == "light":
         id2 = last_query[3]
         num = idn >> 4
-        idn = int("{:x}".format(idn))
+        try:
+            idn = int("{:x}".format(idn))
+        except:
+            logger.warning("invalid packet, light room number {} is not decimal".format(idn))
 
         for bit in range(0, num):
             payload = DISCOVERY_PAYLOAD[device][0].copy()
