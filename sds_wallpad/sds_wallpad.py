@@ -372,19 +372,29 @@ class SDSSerial:
         self._pending_recv = 0
 
         # 시리얼에 뭐가 떠다니는지 확인
-        self.set_timeout(5.0)
+        self.set_timeout(5)
         data = self._recv_raw(1)
-        self.set_timeout(None)
+        self.set_timeout(10)
         if not data:
             logger.critical("no active packet at this serial port!")
+            sys.exit(1)
 
     def _recv_raw(self, count=1):
-        return self._ser.read(count)
+        try:
+            return self._ser.read(count)
+        except serial.SerialTimeoutException:
+            return None
+        except Exception as e:
+            logger.warning("unhandled exception {}".format(e))
 
     def recv(self, count=1):
         # serial은 pending count만 업데이트
         self._pending_recv = max(self._pending_recv - count, 0)
-        return self._recv_raw(count)
+        data = self._recv_raw(count)
+        if not data or len(data) < count:
+            logger.critical("serial connection lost!")
+            sys.exit(1)
+        return data
 
     def send(self, a):
         self._ser.write(a)
@@ -414,20 +424,30 @@ class SDSSocket:
         self._pending_recv = 0
 
         # 소켓에 뭐가 떠다니는지 확인
-        self.set_timeout(5.0)
+        self.set_timeout(5)
         data = self._recv_raw(1)
-        self.set_timeout(None)
+        self.set_timeout(10)
         if not data:
             logger.critical("no active packet at this socket!")
+            sys.exit(1)
 
     def _recv_raw(self, count=1):
-        return self._soc.recv(count)
+        try:
+            return self._soc.recv(count)
+        except socket.timeout:
+            return None
+        except Exception as e:
+            logger.warning("unhandled exception {}".format(e))
 
     def recv(self, count=1):
         # socket은 버퍼와 in_waiting 직접 관리
         while len(self._recv_buf) < count:
             new_data = self._recv_raw(256)
             self._recv_buf.extend(new_data)
+
+            if not new_data:
+                logger.warning("socket connection lost!")
+                sys.exit(1)
 
         self._pending_recv = max(self._pending_recv - count, 0)
 
@@ -1061,8 +1081,8 @@ def serial_get_header():
             if header_1 < 0x80: break
             header_0 = header_1
 
-    except (OSError, serial.SerialException):
-        logger.error("ignore exception!")
+    except Exception as e:
+        logger.warning("ignore exception {}".format(e))
         header_0 = header_1 = 0
 
     # 헤더 반환
@@ -1234,18 +1254,11 @@ def dump_loop():
                     else:           logs.append(",  {:02X}".format(b))
         logger.info("".join(logs))
         logger.warning("dump done.")
-        conn.set_timeout(None)
+        conn.set_timeout(10)
 
 
-if __name__ == "__main__":
+def conn_init():
     global conn
-
-    # configuration 로드 및 로거 설정
-    init_logger()
-    init_option(sys.argv)
-    init_logger_file()
-
-    init_virtual_device()
 
     if Options["serial_mode"] == "socket":
         logger.info("initialize socket...")
@@ -1254,8 +1267,17 @@ if __name__ == "__main__":
         logger.info("initialize serial...")
         conn = SDSSerial()
 
-    dump_loop()
 
+if __name__ == "__main__":
+    # configuration 로드 및 로거 설정
+    init_logger()
+    init_option(sys.argv)
+    init_logger_file()
+
+    init_virtual_device()
+
+    conn_init()
+    dump_loop()
     start_mqtt_loop()
 
     try:
