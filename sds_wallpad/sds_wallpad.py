@@ -1021,7 +1021,7 @@ def serial_new_device(device, idn, packet):
             if device == "energy":
                 payload["name"] = "{}_{}_consumption".format(prefix, ("power", "gas", "water")[idn])
                 payload["dev_cla"] = ("power", "gas", "water")[idn]
-                payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
+                payload["unit_of_meas"] = ("W", "m³", "m³")[idn]
                 payload["val_tpl"] = ("{{ value }}", "{{ value | float / 100 }}", "{{ value | float / 100 }}")[idn]
 
             mqtt_discovery(payload)
