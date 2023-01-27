@@ -313,7 +313,6 @@ DISCOVERY_PAYLOAD = {
         "_intg": "sensor",
         "~": "{prefix}/energy/{idn}",
         "name": "_",
-        "dev_cla": "_",
         "stat_t": "~/current/state",
         "unit_of_meas": "_",
         "val_tpl": "_",
@@ -1020,9 +1019,10 @@ def serial_new_device(device, idn, packet):
             # 실시간 에너지 사용량에는 적절한 이름과 단위를 붙여준다 (단위가 없으면 그래프로 출력이 안됨)
             if device == "energy":
                 payload["name"] = "{}_{}_consumption".format(prefix, ("power", "gas", "water")[idn])
-                payload["dev_cla"] = ("power", "gas", "water")[idn]
-                payload["unit_of_meas"] = ("W", "m³", "m³")[idn]
+                payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
                 payload["val_tpl"] = ("{{ value }}", "{{ value | float / 100 }}", "{{ value | float / 100 }}")[idn]
+                if idn == 0:
+                    payload["dev_cla"] = "power"
 
             mqtt_discovery(payload)
 
