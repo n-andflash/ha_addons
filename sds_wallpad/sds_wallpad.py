@@ -814,16 +814,27 @@ def virtual_enable(header_0, header_1):
 
     # 마무리만 하드코딩으로 좀 하자... 슬슬 귀찮다
     if header_1 == 0x32:
+        payload = "OFF"
+        topic = "{}/virtual/intercom/public/state".format(prefix)
+        logger.info("doorlock status: {} = {}".format(topic, payload))
+        mqtt.publish(topic, payload)
+
         payload = "online"
         topic = "{}/virtual/intercom/public/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
 
     elif header_1 == 0x31:
+        payload = "OFF"
+        topic = "{}/virtual/intercom/private/state".format(prefix)
+        logger.info("doorlock status: {} = {}".format(topic, payload))
+        mqtt.publish(topic, payload)
+
         payload = "online"
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
+
         VIRTUAL_DEVICE["intercom"]["trigger"]["private"] = VIRTUAL_DEVICE["intercom"]["trigger"]["priv_a"]
 
     elif header_1 == 0x36 or header_1 == 0x3E:
