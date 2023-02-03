@@ -36,6 +36,8 @@
 * 동작 조건
     * **EW11 (소켓 통신) 사용 시 지원 불가**
     * **기존 현관 스위치의 RS485 연결을 분리 필요**
+       * EW11에서도 현관 스위치를 분리하지 않고 intercom\_mode를 "minimal" 로 설정하면 엘리베이터 호출에 성공하는 경우가 있습니다.
+       * 성공 확률 및 소요시간은 설치 환경마다 다릅니다. 자세한 내용은 아래 [항목 설명](https://github.com/n-andflash/ha_addons/tree/master/sds_wallpad#entrance_mode-off--minimal--full)을 참고하세요.
     * Configuration에서 entrance\_mode를 "full" 로 변경
         * 디스플레이가 달린 신형 현관스위치인 경우 "full" 대신 "new" 로 변경
 * 지원 기능
@@ -44,7 +46,7 @@
 
 #### 인터폰 추가 시 추가 연결
 * 동작 조건
-    * **EW11 (소켓 통신) 사용 시 지원 불가**
+    * **EW11 (소켓 통신) 사용 시 지원 불가** 
     * Configuration에서 intercom\_mode를 "on" 으로 변경
 * 지원 기능
     * 공동현관 출입문 열림 (초인종이 울린 상태에서만 가능)
@@ -104,7 +106,7 @@
 * serial: USB to RS485 혹은 TTL to RS485를 이용하는 경우
 * socket: EW11을 이용하는 경우
 
-#### `entrance_mode` (off / minimal / full)
+#### `entrance_mode` (off / minimal / full / new)
 * full: 현관 스위치가 없거나 연결을 끊은 경우, 이 애드온이 완전한 현관 스위치로 동작합니다.
 * new: 디스플레이가 달린 신형 현관스위치인 경우 full 대신 new로 설정해야 할 수 있습니다.
 * minimal: 현관 스위치가 있는 상황에서, 엘리베이터 호출이 필요한 경우만 강제로 끼워넣습니다 (nodejs 애드온과 거의 같은 방식). 성공률이 매우 낮아서 수십 초 이상 걸리는 경우도 있습니다. max\_retry를 적절히 설정하세요.
