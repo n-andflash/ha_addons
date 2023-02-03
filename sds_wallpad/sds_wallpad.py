@@ -377,8 +377,7 @@ class SDSSerial:
         data = self._recv_raw(1)
         self.set_timeout(10)
         if not data:
-            logger.critical("no active packet at this serial port!")
-            sys.exit(1)
+            raise RuntimeError("no active packet at this serial port!")
 
     def _recv_raw(self, count=1):
         try:
@@ -393,8 +392,7 @@ class SDSSerial:
         self._pending_recv = max(self._pending_recv - count, 0)
         data = self._recv_raw(count)
         if not data or len(data) < count:
-            logger.critical("serial connection lost!")
-            sys.exit(1)
+            raise RuntimeError("serial connection lost!")
         return data
 
     def send(self, a):
@@ -429,8 +427,7 @@ class SDSSocket:
         data = self._recv_raw(1)
         self.set_timeout(10)
         if not data:
-            logger.critical("no active packet at this socket!")
-            sys.exit(1)
+            raise RuntimeError("no active packet at this socket!")
 
     def _recv_raw(self, count=1):
         try:
@@ -444,11 +441,9 @@ class SDSSocket:
         # socket은 버퍼와 in_waiting 직접 관리
         while len(self._recv_buf) < count:
             new_data = self._recv_raw(256)
-            self._recv_buf.extend(new_data)
-
             if not new_data:
-                logger.warning("socket connection lost!")
-                sys.exit(1)
+                raise RuntimeError("socket connection lost!")
+            self._recv_buf.extend(new_data)
 
         self._pending_recv = max(self._pending_recv - count, 0)
 
@@ -803,8 +798,7 @@ def start_mqtt_loop():
     try:
         mqtt.connect(Options["mqtt"]["server"], Options["mqtt"]["port"])
     except Exception as e:
-        logger.error("MQTT server address/port may be incorrect! ({})".format(str(e)))
-        sys.exit(1)
+        raise AssertionError("MQTT server address/port may be incorrect! ({})".format(str(e)))
 
     mqtt.loop_start()
 
@@ -1084,7 +1078,7 @@ def serial_get_header():
             if header_1 < 0x80: break
             header_0 = header_1
 
-    except Exception as e:
+    except (OSError, serial.SerialException):
         logger.warning("ignore exception {}".format(e))
         header_0 = header_1 = 0
 
@@ -1279,12 +1273,18 @@ if __name__ == "__main__":
 
     init_virtual_device()
 
-    conn_init()
-    dump_loop()
-    start_mqtt_loop()
+    while True:
+        try:
+            conn_init()
+            dump_loop()
+            start_mqtt_loop()
 
-    try:
-        # 무한 루프
-        serial_loop()
-    except:
-        logger.exception("addon finished!")
+            # 무한 루프
+            serial_loop()
+
+        except RuntimeError as e:
+            logger.warning("restart addon ... ({})".format(str(e)))
+            time.sleep(2)
+        except Exception as e:
+            logger.exception("addon exception! ({})".format(str(e)))
+            sys.exit(1)
