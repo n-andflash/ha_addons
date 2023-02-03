@@ -1,5 +1,12 @@
 # 수정 내역
 
+## 9.4
+
+* 소켓 끊어졌을때 애드온 자체적으로 재연결 시도하도록 재수정
+  * EW11 사용시 연결이 주기적으로 끊어지는 경우 EW11 설정 페이지의 Communication Settings - Socket Settings - Timeout(s) 이 0으로 설정되어 있는지 확인이 필요합니다.
+  * 문제가 있는 경우 [Github issue 페이지](https://github.com/n-andflash/ha_addons/issues) 혹은 [HA 카페](https://cafe.naver.com/koreassistant)에 글을 올려주세요.
+* 공동현관 예약 동작 안하는 경우 수정
+
 ## 9.3
 
 * water/gas device class 제거 및 유량 단위로 원복
