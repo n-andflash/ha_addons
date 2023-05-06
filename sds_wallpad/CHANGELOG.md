@@ -1,5 +1,9 @@
 # 수정 내역
 
+## 9.5
+
+* 일부 환경에서 "s6-overlay-suexec: fatal: can only run as pid 1" 오류 해결
+
 ## 9.4
 
 * 소켓 끊어졌을때 애드온 자체적으로 재연결 시도하도록 재수정

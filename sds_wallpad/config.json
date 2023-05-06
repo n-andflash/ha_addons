@@ -1,5 +1,5 @@
 {
-	"version": "9.4",
+	"version": "9.5",
 	"slug": "sds_wallpad",
 	"name": "Samsung SDS RS485 Addon with Elevator Call",
 	"description": "삼성 SDS 월패드용 애드온입니다. 엘리베이터 호출 및 가스밸브 차단 기능을 제공합니다.",
@@ -7,6 +7,7 @@
 	"startup": "application",
 	"boot": "auto",
 	"arch": [ "armhf", "armv7", "aarch64", "amd64", "i386" ],
+	"init": false,
 
 	"uart": true,
 	"map": [ "share:rw" ],
@@ -40,7 +41,7 @@
 			"max_retry": 20,
 			"early_response": 2,
 			"dump_time": 0,
-            "intercom_header": "A45A"
+			"intercom_header": "A45A"
 		},
 		"log": {
 			"to_file": true,
@@ -76,7 +77,7 @@
 			"max_retry": "int(0,100)",
 			"early_response": "int(0,2)",
 			"dump_time": "int",
-            "intercom_header": "str?"
+			"intercom_header": "str?"
 		},
 		"log": {
 			"to_file": "bool",
