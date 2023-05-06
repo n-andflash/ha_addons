@@ -291,6 +291,7 @@ DISCOVERY_PAYLOAD = {
         "_intg": "sensor",
         "~": "{prefix}/plug/{idn}",
         "name": "{prefix}_plug_{idn}_power_usage",
+        "dev_cla": "power",
         "stat_t": "~/current/state",
         "unit_of_meas": "W",
     } ],
@@ -376,8 +377,7 @@ class SDSSerial:
         data = self._recv_raw(1)
         self.set_timeout(10)
         if not data:
-            logger.critical("no active packet at this serial port!")
-            sys.exit(1)
+            raise RuntimeError("no active packet at this serial port!")
 
     def _recv_raw(self, count=1):
         try:
@@ -392,8 +392,7 @@ class SDSSerial:
         self._pending_recv = max(self._pending_recv - count, 0)
         data = self._recv_raw(count)
         if not data or len(data) < count:
-            logger.critical("serial connection lost!")
-            sys.exit(1)
+            raise RuntimeError("serial connection lost!")
         return data
 
     def send(self, a):
@@ -428,8 +427,7 @@ class SDSSocket:
         data = self._recv_raw(1)
         self.set_timeout(10)
         if not data:
-            logger.critical("no active packet at this socket!")
-            sys.exit(1)
+            raise RuntimeError("no active packet at this socket!")
 
     def _recv_raw(self, count=1):
         try:
@@ -443,11 +441,9 @@ class SDSSocket:
         # socket은 버퍼와 in_waiting 직접 관리
         while len(self._recv_buf) < count:
             new_data = self._recv_raw(256)
-            self._recv_buf.extend(new_data)
-
             if not new_data:
-                logger.warning("socket connection lost!")
-                sys.exit(1)
+                raise RuntimeError("socket connection lost!")
+            self._recv_buf.extend(new_data)
 
         self._pending_recv = max(self._pending_recv - count, 0)
 
@@ -802,8 +798,7 @@ def start_mqtt_loop():
     try:
         mqtt.connect(Options["mqtt"]["server"], Options["mqtt"]["port"])
     except Exception as e:
-        logger.error("MQTT server address/port may be incorrect! ({})".format(str(e)))
-        sys.exit(1)
+        raise AssertionError("MQTT server address/port may be incorrect! ({})".format(str(e)))
 
     mqtt.loop_start()
 
@@ -819,16 +814,27 @@ def virtual_enable(header_0, header_1):
 
     # 마무리만 하드코딩으로 좀 하자... 슬슬 귀찮다
     if header_1 == 0x32:
+        payload = "OFF"
+        topic = "{}/virtual/intercom/public/state".format(prefix)
+        logger.info("doorlock status: {} = {}".format(topic, payload))
+        mqtt.publish(topic, payload)
+
         payload = "online"
         topic = "{}/virtual/intercom/public/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
 
     elif header_1 == 0x31:
+        payload = "OFF"
+        topic = "{}/virtual/intercom/private/state".format(prefix)
+        logger.info("doorlock status: {} = {}".format(topic, payload))
+        mqtt.publish(topic, payload)
+
         payload = "online"
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
+
         VIRTUAL_DEVICE["intercom"]["trigger"]["private"] = VIRTUAL_DEVICE["intercom"]["trigger"]["priv_a"]
 
     elif header_1 == 0x36 or header_1 == 0x3E:
@@ -983,12 +989,7 @@ def serial_peek_value(parse, packet):
     elif pattern == "2Byte":
         value += packet[pos-1] << 8
     elif pattern == "6decimal":
-        try:
-            value = packet[pos : pos+3].hex()
-        except:
-            # 어쩌다 깨지면 뻗음...
-            logger.warning("invalid packet, {} is not decimal".format(packet.hex()))
-            value = 0
+        value = packet[pos : pos+3].hex()
 
     return [(attr, value)]
 
@@ -1000,7 +1001,10 @@ def serial_new_device(device, idn, packet):
     if device == "light":
         id2 = last_query[3]
         num = idn >> 4
-        idn = int("{:x}".format(idn))
+        try:
+            idn = int("{:x}".format(idn))
+        except:
+            logger.warning("invalid packet, light room number {} is not decimal".format(idn))
 
         for bit in range(0, num):
             payload = DISCOVERY_PAYLOAD[device][0].copy()
@@ -1022,6 +1026,8 @@ def serial_new_device(device, idn, packet):
                 payload["name"] = "{}_{}_consumption".format(prefix, ("power", "gas", "water")[idn])
                 payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
                 payload["val_tpl"] = ("{{ value }}", "{{ value | float / 100 }}", "{{ value | float / 100 }}")[idn]
+                if idn == 0:
+                    payload["dev_cla"] = "power"
 
             mqtt_discovery(payload)
 
@@ -1083,7 +1089,7 @@ def serial_get_header():
             if header_1 < 0x80: break
             header_0 = header_1
 
-    except Exception as e:
+    except (OSError, serial.SerialException):
         logger.warning("ignore exception {}".format(e))
         header_0 = header_1 = 0
 
@@ -1278,12 +1284,18 @@ if __name__ == "__main__":
 
     init_virtual_device()
 
-    conn_init()
-    dump_loop()
-    start_mqtt_loop()
+    while True:
+        try:
+            conn_init()
+            dump_loop()
+            start_mqtt_loop()
 
-    try:
-        # 무한 루프
-        serial_loop()
-    except:
-        logger.exception("addon finished!")
+            # 무한 루프
+            serial_loop()
+
+        except RuntimeError as e:
+            logger.warning("restart addon ... ({})".format(str(e)))
+            time.sleep(2)
+        except Exception as e:
+            logger.exception("addon exception! ({})".format(str(e)))
+            sys.exit(1)
