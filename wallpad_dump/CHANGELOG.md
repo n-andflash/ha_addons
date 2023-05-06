@@ -1,5 +1,9 @@
 ## 수정 내역
 
+#### 0.4
+
+* 일부 환경에서 "s6-overlay-suexec: fatal: can only run as pid 1" 오류 해결
+
 #### 0.3
 
 * HA core 2021.2 의 변경사항으로 인한 warning 발생 수정
