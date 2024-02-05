@@ -602,11 +602,6 @@ def mqtt_add_virtual():
 
             mqtt_discovery(payload)
 
-            # 트리거 초기 상태 설정
-            topic = payload["~"] + "/state"
-            logger.info("initial state:   {} = OFF".format(topic))
-            mqtt.publish(topic, "OFF")
-
     # 인터폰 장치 등록
     if Options["intercom_mode"] != "off":
         prefix = Options["mqtt"]["prefix"]
@@ -617,7 +612,33 @@ def mqtt_add_virtual():
 
             mqtt_discovery(payload)
 
-            # 트리거 초기 상태 설정
+
+def mqtt_init_virtual():
+    # 현관스위치 초기 상태 설정
+    if Options["entrance_mode"] != "off":
+        if Options["entrance_mode"] == "new":
+            ent = "entrance2"
+        else:
+            ent = "entrance"
+
+        prefix = Options["mqtt"]["prefix"]
+        for payloads in DISCOVERY_VIRTUAL[ent]:
+            payload = payloads.copy()
+            payload["~"] = payload["~"].format(prefix)
+            payload["name"] = payload["name"].format(prefix)
+            topic = payload["~"] + "/state"
+            logger.info("initial state:   {} = OFF".format(topic))
+            mqtt.publish(topic, "OFF")
+
+    # 인터폰 초기 상태 설정
+    if Options["intercom_mode"] != "off":
+        prefix = Options["mqtt"]["prefix"]
+
+        for payloads in DISCOVERY_VIRTUAL["intercom"]:
+            payload = payloads.copy()
+            payload["~"] = payload["~"].format(prefix)
+            payload["name"] = payload["name"].format(prefix)
+
             topic = payload["~"] + "/state"
             logger.info("initial state:   {} = OFF".format(topic))
             mqtt.publish(topic, "OFF")
@@ -729,11 +750,18 @@ def mqtt_init_discovery():
     # HA가 재시작됐을 때 모든 discovery를 다시 수행한다
     Options["mqtt"]["_discovery"] = Options["mqtt"]["discovery"]
     mqtt_add_virtual()
+
+    mqtt_init_state()
+
+
+def mqtt_init_state():
     for device in RS485_DEVICE:
         RS485_DEVICE[device]["last"] = {}
 
     global last_topic_list
     last_topic_list = {}
+
+    mqtt_init_virtual()
 
 
 def mqtt_on_message(mqtt, userdata, msg):
@@ -814,22 +842,12 @@ def virtual_enable(header_0, header_1):
 
     # 마무리만 하드코딩으로 좀 하자... 슬슬 귀찮다
     if header_1 == 0x32:
-        payload = "OFF"
-        topic = "{}/virtual/intercom/public/state".format(prefix)
-        logger.info("doorlock status: {} = {}".format(topic, payload))
-        mqtt.publish(topic, payload)
-
         payload = "online"
         topic = "{}/virtual/intercom/public/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
         mqtt.publish(topic, payload)
 
     elif header_1 == 0x31:
-        payload = "OFF"
-        topic = "{}/virtual/intercom/private/state".format(prefix)
-        logger.info("doorlock status: {} = {}".format(topic, payload))
-        mqtt.publish(topic, payload)
-
         payload = "online"
         topic = "{}/virtual/intercom/private/available".format(prefix)
         logger.info("doorlock status: {} = {}".format(topic, payload))
@@ -1212,6 +1230,10 @@ def serial_loop():
                 if Options["mqtt"]["_discovery"]:
                     logger.info("Add new device:  All done.")
                     Options["mqtt"]["_discovery"] = False
+
+                    # discovery 속도 문제로 HA에 초기 상태 등록 안되는 경우 있어서, 한번 재등록
+                    mqtt_init_state()
+
                 else:
                     logger.info("running stable...")
 
