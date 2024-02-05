@@ -895,9 +895,9 @@ def virtual_query(header_0, header_1):
     if conn.check_pending_recv():
         return
 
-    # 아직 2Byte 덜 받았으므로 올때까지 기다리는게 정석 같지만,
+    # 아직 4~5Byte 중 2Byte만 받았으므로 다 올때까지 기다리는게 정석 같지만,
     # 조금 일찍 시작하는게 성공률이 더 높은거 같기도 하다.
-    length = 2 - Options["rs485"]["early_response"]
+    length = resp_size - 2 - Options["rs485"]["early_response"]
     if length > 0:
         while conn.check_in_waiting() < length: pass
 
