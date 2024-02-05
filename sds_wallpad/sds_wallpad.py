@@ -73,18 +73,19 @@ VIRTUAL_DEVICE = {
             "opena":   { "header1": 0x36, "resp": 0xB0420072, }, # 통화 시작 요청 성공, 통화중이라고 ack 보내기
             "vopena":  { "header1": 0x38, "resp": 0xB0420072, }, # 영상통화 시작 요청 성공, 통화중이라고 ack 보내기
             "vconna":  { "header1": 0x35, "resp": 0xB0350005, }, # 영상 전송 시작됨
-            "open2a":  { "header1": 0x3B, "resp": 0xB0420072, }, # 문열림 요청 성공, 통화중이라고 ack 보내기
+            "open2a":  { "header1": 0x3B, "resp": 0xB0410071, }, # 문열림 요청 성공, 통화 종료
             "end":     { "header1": 0x3E, "resp": 0xB03EFFFF, }, # 상황 종료, Byte[2] 가 반드시 일치해야 함
         },
 
         "trigger": {
             "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public2", "ON"), }, # 통화 시작
-            "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("end", "ON"), }, # 문열림
+            #"public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("end", "ON"), }, # 문열림
+            "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": None, }, # 문열림
             "priv_a":  { "ack": 0x36, "ON": 0xB0360107, "next": ("privat2", "ON"), }, # 현관 통화 시작 (초인종 울렸을 때)
             "priv_b":  { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
             "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
-            "privat2": { "ack": 0x3B, "ON": 0xB03B000B, "next": ("end", "ON"), }, # 현관 문열림
-            "end":     { "ack": 0x3E, "ON": 0xB0420072, "next": None, }, # 문열림 후, 통화 종료 알려줄때까지 통화상태로 유지
+            "privat2": { "ack": 0x3B, "ON": 0xB03B000B, "next": None, }, # 현관 문열림
+            #"end":     { "ack": 0x41, "ON": 0xB0420072, "next": None, }, # 문열림 후, 통화 종료
         },
     },
 }
