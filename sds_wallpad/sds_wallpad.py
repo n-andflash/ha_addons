@@ -352,7 +352,7 @@ serial_ack = {}
 last_query = int(0).to_bytes(2, "big")
 last_topic_list = {}
 
-mqtt = paho_mqtt.Client()
+mqtt = paho_mqtt.Client(client_id="sds_wallpad-{}".format(time.time()))
 mqtt_connected = False
 
 logger = logging.getLogger(__name__)
