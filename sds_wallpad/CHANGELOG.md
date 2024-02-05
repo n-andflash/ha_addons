@@ -1,5 +1,13 @@
 # 수정 내역
 
+## 9.6
+
+* 신형 현관스위치에서 early_response를 0으로 세팅하면 완전히 꺼질수 있도록 변경
+  * 신형 현관스위치(entrance_mode: new) 사용하던 중 이번 버전에서만 동작이 안되면 early_response 설정값을 1 올려서 사용하세요.
+* discovery 속도 문제로 HA에 초기 상태 등록 안되는 경우 있어서, 일정 시간 지난 후 한번 재등록
+* 인터폰 문열림기능 종료 시퀀스 단순화
+* MQTT 연결 시 client id 설정
+
 ## 9.5
 
 * 일부 환경에서 "s6-overlay-suexec: fatal: can only run as pid 1" 오류 해결
