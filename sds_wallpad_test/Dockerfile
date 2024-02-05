@@ -1,6 +1,6 @@
 #ARG BUILD_FROM
 #FROM $BUILD_FROM
-FROM python:3-alpine
+FROM python:3
 
 ENV LANG C.UTF-8
 
