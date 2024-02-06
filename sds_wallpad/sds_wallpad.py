@@ -161,7 +161,7 @@ RS485_DEVICE = {
 
 DISCOVERY_DEVICE = {
     "ids": ["sds_wallpad",],
-    "name": "sds_wallpad",
+    "name": "SDS월패드",
     "mf": "Samsung SDS",
     "mdl": "Samsung SDS Wallpad",
     "sw": "n-andflash/ha_addons/sds_wallpad",
@@ -171,16 +171,18 @@ DISCOVERY_VIRTUAL = {
     "entrance": [
         {
             "_intg": "switch",
-            "~": "{}/virtual/entrance/ev",
-            "name": "{}_elevator",
+            "~": "{prefix}/virtual/entrance/ev",
+            "name": "엘리베이터",
+            "obj_id": "{prefix}_elevator",
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
         },
         {
             "_intg": "switch",
-            "~": "{}/virtual/entrance/gas",
-            "name": "{}_gas_cutoff",
+            "~": "{prefix}/virtual/entrance/gas",
+            "name": "가스차단",
+            "obj_id": "{prefix}_gas_cutoff",
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:valve",
@@ -189,8 +191,9 @@ DISCOVERY_VIRTUAL = {
     "entrance2": [
         {
             "_intg": "switch",
-            "~": "{}/virtual/entrance2/ev",
-            "name": "{}_new_elevator",
+            "~": "{prefix}/virtual/entrance2/ev",
+            "name": "엘리베이터",
+            "obj_id": "{prefix}_new_elevator",
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
@@ -199,8 +202,9 @@ DISCOVERY_VIRTUAL = {
     "intercom": [
         {
             "_intg": "switch",
-            "~": "{}/virtual/intercom/public",
-            "name": "{}_intercom_public",
+            "~": "{prefix}/virtual/intercom/public",
+            "name": "공동현관",
+            "obj_id": "{prefix}_intercom_public",
             "avty_t": "~/available",
             "stat_t": "~/state",
             "cmd_t": "~/command",
@@ -208,16 +212,18 @@ DISCOVERY_VIRTUAL = {
         },
         {
             "_intg": "switch",
-            "~": "{}/virtual/intercom/private",
-            "name": "{}_intercom_private",
+            "~": "{prefix}/virtual/intercom/private",
+            "name": "현관",
+            "obj_id": "{prefix}_intercom_private",
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:door-closed",
         },
         {
             "_intg": "binary_sensor",
-            "~": "{}/virtual/intercom/public",
-            "name": "{}_intercom_public",
+            "~": "{prefix}/virtual/intercom/public",
+            "name": "공동현관 초인종",
+            "obj_id": "{prefix}_intercom_public",
             "dev_cla": "sound",
             "stat_t": "~/available",
             "pl_on": "online",
@@ -225,8 +231,9 @@ DISCOVERY_VIRTUAL = {
         },
         {
             "_intg": "binary_sensor",
-            "~": "{}/virtual/intercom/private",
-            "name": "{}_intercom_private",
+            "~": "{prefix}/virtual/intercom/private",
+            "name": "현관 초인종",
+            "obj_id": "{prefix}_intercom_private",
             "dev_cla": "sound",
             "stat_t": "~/available",
             "pl_on": "online",
@@ -239,7 +246,8 @@ DISCOVERY_PAYLOAD = {
     "light": [ {
         "_intg": "light",
         "~": "{prefix}/light",
-        "name": "_",
+        "name": "조명 {id2}",
+        "obj_id": "{prefix}_light_{id2}",
         "opt": True,
         "stat_t": "~/{idn}/power{bit}/state",
         "cmd_t": "~/{id2}/power/command",
@@ -247,7 +255,8 @@ DISCOVERY_PAYLOAD = {
     "fan": [ {
         "_intg": "fan",
         "~": "{prefix}/fan/{idn}",
-        "name": "{prefix}_fan_{idn}",
+        "name": "환기",
+        "obj_id": "{prefix}_fan_{idn}",
         "opt": True,
         "stat_t": "~/power/state",
         "cmd_t": "~/power/command",
@@ -262,7 +271,8 @@ DISCOVERY_PAYLOAD = {
     "thermostat": [ {
         "_intg": "climate",
         "~": "{prefix}/thermostat/{idn}",
-        "name": "{prefix}_thermostat_{idn}",
+        "name": "난방 {idn}",
+        "obj_id": "{prefix}_thermostat_{idn}",
         "mode_stat_t": "~/power/state",
         "mode_cmd_t": "~/power/command",
         "temp_stat_t": "~/target/state",
@@ -275,7 +285,8 @@ DISCOVERY_PAYLOAD = {
     "plug": [ {
         "_intg": "switch",
         "~": "{prefix}/plug/{idn}/power",
-        "name": "{prefix}_plug_{idn}",
+        "name": "콘센트 {idn} 전원",
+        "obj_id": "{prefix}_plug_{idn}",
         "stat_t": "~/state",
         "cmd_t": "~/command",
         "icon": "mdi:power-plug",
@@ -283,7 +294,8 @@ DISCOVERY_PAYLOAD = {
     {
         "_intg": "switch",
         "~": "{prefix}/plug/{idn}/idlecut",
-        "name": "{prefix}_plug_{idn}_standby_cutoff",
+        "name": "콘센트 {idn} 대기전력차단",
+        "obj_id": "{prefix}_plug_{idn}_standby_cutoff",
         "stat_t": "~/state",
         "cmd_t": "~/command",
         "icon": "mdi:leaf",
@@ -291,7 +303,8 @@ DISCOVERY_PAYLOAD = {
     {
         "_intg": "sensor",
         "~": "{prefix}/plug/{idn}",
-        "name": "{prefix}_plug_{idn}_power_usage",
+        "name": "콘센트 {idn} 전력사용량",
+        "obj_id": "{prefix}_plug_{idn}_power_usage",
         "dev_cla": "power",
         "stat_t": "~/current/state",
         "unit_of_meas": "W",
@@ -299,21 +312,24 @@ DISCOVERY_PAYLOAD = {
     "cutoff": [ {
         "_intg": "switch",
         "~": "{prefix}/cutoff/{idn}/power",
-        "name": "{prefix}_light_cutoff_{idn}",
+        "name": "일괄소등",
+        "obj_id": "{prefix}_light_cutoff_{idn}",
         "stat_t": "~/state",
         "cmd_t": "~/command",
     } ],
     "gas_valve": [ {
         "_intg": "sensor",
         "~": "{prefix}/gas_valve/{idn}",
-        "name": "{prefix}_gas_valve_{idn}",
         "stat_t": "~/power/state",
+        "name": "가스밸브",
+        "obj_id": "{prefix}_gas_valve_{idn}",
         "icon": "mdi:valve",
     } ],
     "energy": [ {
         "_intg": "sensor",
         "~": "{prefix}/energy/{idn}",
-        "name": "_",
+        "name": "{kor} 사용량",
+        "obj_id": "{prefix}_{eng}_consumption",
         "stat_t": "~/current/state",
         "unit_of_meas": "_",
         "val_tpl": "_",
@@ -584,10 +600,10 @@ def mqtt_discovery(payload):
 
     # MQTT 통합구성요소에 등록되기 위한 추가 내용
     payload["device"] = DISCOVERY_DEVICE
-    payload["uniq_id"] = payload["name"]
+    payload["uniq_id"] = payload["obj_id"]
 
     # discovery에 등록
-    topic = "homeassistant/{}/sds_wallpad/{}/config".format(intg, payload["name"])
+    topic = "homeassistant/{}/sds_wallpad/{}/config".format(intg, payload["uniq_id"])
     logger.info("Add new device:  {}".format(topic))
     mqtt.publish(topic, json.dumps(payload))
 
@@ -603,8 +619,8 @@ def mqtt_add_virtual():
         prefix = Options["mqtt"]["prefix"]
         for payloads in DISCOVERY_VIRTUAL[ent]:
             payload = payloads.copy()
-            payload["~"] = payload["~"].format(prefix)
-            payload["name"] = payload["name"].format(prefix)
+            payload["~"] = payload["~"].format(prefix=prefix)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix)
 
             mqtt_discovery(payload)
 
@@ -613,8 +629,8 @@ def mqtt_add_virtual():
         prefix = Options["mqtt"]["prefix"]
         for payloads in DISCOVERY_VIRTUAL["intercom"]:
             payload = payloads.copy()
-            payload["~"] = payload["~"].format(prefix)
-            payload["name"] = payload["name"].format(prefix)
+            payload["~"] = payload["~"].format(prefix=prefix)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix)
 
             mqtt_discovery(payload)
 
@@ -630,8 +646,7 @@ def mqtt_init_virtual():
         prefix = Options["mqtt"]["prefix"]
         for payloads in DISCOVERY_VIRTUAL[ent]:
             payload = payloads.copy()
-            payload["~"] = payload["~"].format(prefix)
-            payload["name"] = payload["name"].format(prefix)
+            payload["~"] = payload["~"].format(prefix=prefix)
             topic = payload["~"] + "/state"
             logger.info("initial state:   {} = OFF".format(topic))
             mqtt.publish(topic, "OFF")
@@ -642,9 +657,7 @@ def mqtt_init_virtual():
 
         for payloads in DISCOVERY_VIRTUAL["intercom"]:
             payload = payloads.copy()
-            payload["~"] = payload["~"].format(prefix)
-            payload["name"] = payload["name"].format(prefix)
-
+            payload["~"] = payload["~"].format(prefix=prefix)
             topic = payload["~"] + "/state"
             logger.info("initial state:   {} = OFF".format(topic))
             mqtt.publish(topic, "OFF")
@@ -1033,7 +1046,8 @@ def serial_new_device(device, idn, packet):
         for bit in range(0, num):
             payload = DISCOVERY_PAYLOAD[device][0].copy()
             payload["~"] = payload["~"].format(prefix=prefix, idn=idn)
-            payload["name"] = "{}_light_{}".format(prefix, id2+bit)
+            payload["name"] = payload["name"].format(id2=id2)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix, id2=id2+bit)
             payload["stat_t"] = payload["stat_t"].format(idn=idn, bit=bit+1)
             payload["cmd_t"] = payload["cmd_t"].format(id2=id2+bit)
 
@@ -1043,11 +1057,15 @@ def serial_new_device(device, idn, packet):
         for payloads in DISCOVERY_PAYLOAD[device]:
             payload = payloads.copy()
             payload["~"] = payload["~"].format(prefix=prefix, idn=idn)
-            payload["name"] = payload["name"].format(prefix=prefix, idn=idn)
+            payload["name"] = payload["name"].format(idn=idn)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix, idn=idn)
 
             # 실시간 에너지 사용량에는 적절한 이름과 단위를 붙여준다 (단위가 없으면 그래프로 출력이 안됨)
             if device == "energy":
-                payload["name"] = "{}_{}_consumption".format(prefix, ("power", "gas", "water")[idn])
+                eng = ("power", "gas", "water")[idn]
+                kor = ("전기", "가스", "수도")[idn]
+                payload["name"] = payload["name"].format(kor=kor)
+                payload["obj_id"] = payload["obj_id"].format(prefix=prefix, eng=eng)
                 payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
                 payload["val_tpl"] = ("{{ value }}", "{{ value | float / 100 }}", "{{ value | float / 100 }}")[idn]
                 if idn == 0:
