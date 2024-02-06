@@ -1067,7 +1067,7 @@ def serial_new_device(device, idn, packet):
                 payload["name"] = payload["name"].format(kor=kor)
                 payload["obj_id"] = payload["obj_id"].format(prefix=prefix, eng=eng)
                 payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
-                payload["val_tpl"] = ("{{ value }}", "{{ value | float / 100 }}", "{{ value | float / 100 }}")[idn]
+                payload["val_tpl"] = "{{ value | float / {} }}".format(10 ** Options["rs485"]["{}_decimal".format(eng)])
                 if idn == 0:
                     payload["dev_cla"] = "power"
 

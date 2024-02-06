@@ -41,7 +41,10 @@
 			"max_retry": 20,
 			"early_response": 2,
 			"dump_time": 0,
-			"intercom_header": "A45A"
+			"intercom_header": "A45A",
+			"power_decimal": 0,
+			"gas_decimal": 2,
+			"water_decimal": 2
 		},
 		"log": {
 			"to_file": true,
@@ -75,9 +78,12 @@
 		},
 		"rs485": {
 			"max_retry": "int(0,100)",
-			"early_response": "list(0|1|2|3)",
+			"early_response": "int(0,3)",
 			"dump_time": "int",
-			"intercom_header": "str?"
+			"intercom_header": "str?",
+			"power_decimal": "int(0,4)",
+			"gas_decimal": "int(0,4)",
+			"water_decimal": "int(0,4)"
 		},
 		"log": {
 			"to_file": "bool",
