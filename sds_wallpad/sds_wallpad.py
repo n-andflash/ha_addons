@@ -144,8 +144,8 @@ RS485_DEVICE = {
     # 부엌 가스 밸브
     "gas_valve": {
         "query":    { "header": 0xAB41, "length":  4, },
-        #"state":    { "header": 0xB041, "length":  4, "parse": {("power", 2, "toggle")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 처리하기 복잡함
-        "state":    { "header": 0xAD56, "length":  4, "parse": {("power", 2, "gas_toggle")} }, # 0: 정상, 1: 차단; 월패드가 현관 스위치에 보내주는 정보로 확인 가능
+        #"state":    { "header": 0xB041, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 처리하기 복잡함
+        "state":    { "header": 0xAD56, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 월패드가 현관 스위치에 보내주는 정보로 확인 가능
         "last":     { },
 
         "power":    { "header": 0xAB78, "length":  4, }, # 0 으로 잠그기만 가능
@@ -318,11 +318,12 @@ DISCOVERY_PAYLOAD = {
         "cmd_t": "~/command",
     } ],
     "gas_valve": [ {
-        "_intg": "sensor",
-        "~": "{prefix}/gas_valve/{idn}",
-        "stat_t": "~/power/state",
+        "_intg": "switch",
+        "~": "{prefix}/gas_valve/{idn}/power",
         "name": "가스밸브",
         "obj_id": "{prefix}_gas_valve_{idn}",
+        "stat_t": "~/state",
+        "cmd_t": "~/command",
         "icon": "mdi:valve",
     } ],
     "energy": [ {
@@ -745,6 +746,8 @@ def mqtt_device(topics, payload):
         logger.error("    unknown command!"); return
     if payload == "":
         logger.error("    no payload!"); return
+    if device == "gas_valve" and payload == "ON":
+        logger.error("    gas valves cannot be opened remotely!"); return
 
     # 문자열 payload를 패킷으로 변환
     payloads = {
@@ -762,8 +765,8 @@ def mqtt_device(topics, payload):
     packet = bytearray(cmd["length"])
     packet[0] = cmd["header"] >> 8
     packet[1] = cmd["header"] & 0xFF
-    packet[cmd["pos"]] = int(float(payload))
 
+    if "pos" in cmd: packet[cmd["pos"]] = int(float(payload))
     if "id" in cmd: packet[cmd["id"]] = int(idn)
 
     # parity 생성 후 queue 에 넣어둠
@@ -1025,6 +1028,8 @@ def serial_peek_value(parse, packet):
         return res
     elif pattern == "toggle":
         value = "ON" if value & 1 else "OFF"
+    elif pattern == "invert":
+        value = "OFF" if value & 1 else "ON"
     elif pattern == "toggle2":
         value = "ON" if value & 0x10 else "OFF"
     elif pattern == "fan_toggle":
@@ -1033,8 +1038,6 @@ def serial_peek_value(parse, packet):
         value = ["", "high", "medium", "low", "auto"][value]
     elif pattern == "heat_toggle":
         value = "heat" if value & 1 else "off"
-    elif pattern == "gas_toggle":
-        value = "차단" if value & 1 else "열림"
     elif pattern == "value":
         pass
     elif pattern == "2Byte":
