@@ -145,7 +145,8 @@ RS485_DEVICE = {
     "gas_valve": {
         "query":    { "header": 0xAB41, "length":  4, },
         #"state":    { "header": 0xB041, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 처리하기 복잡함
-        "state":    { "header": 0xAD56, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 월패드가 현관 스위치에 보내주는 정보로 확인 가능
+        #"state":    { "header": 0xAD56, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 월패드가 현관 스위치에 보내주는 정보로 확인 가능
+        "state":    { "header": 0xAB41, "length":  8, "parse": {("power", 6, "invert")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 query에서부터 읽어서 처리
         "last":     { },
 
         "power":    { "header": 0xAB78, "length":  4, }, # 0 으로 잠그기만 가능
