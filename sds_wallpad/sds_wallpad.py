@@ -353,7 +353,12 @@ serial_ack = {}
 last_query = int(0).to_bytes(2, "big")
 last_topic_list = {}
 
-mqtt = paho_mqtt.Client(client_id="sds_wallpad-{}".format(time.time()))
+try:
+    from paho.mqtt.enums import CallbackAPIVersion
+    mqtt = paho_mqtt.Client(CallbackAPIVersion.VERSION1, client_id="sds_wallpad-{}".format(time.time()))
+except Exception as e:
+    mqtt = paho_mqtt.Client(client_id="sds_wallpad-{}".format(time.time()))
+
 mqtt_connected = False
 
 logger = logging.getLogger(__name__)
