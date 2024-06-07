@@ -52,11 +52,13 @@ VIRTUAL_DEVICE = {
 
             # 성공 시 ack들, 무시해도 상관 없...으려나?
             "eva":   { "header1": 0x10, "resp": 0xB041010070, },
+            "gasa":  { "header1": 0x13, "resp": 0xB041010070, },
         },
 
         # 0xCC41에 다르게 응답하는 방법들, 이 경우 월패드가 다시 ack를 보내준다
         "trigger": {
             "ev":    { "ack": 0x10, "ON": 0xB010010120, "next": None, },
+            "gas":   { "ack": 0x13, "ON": 0xB01301015F, "next": None, },
         },
     },
 
@@ -145,7 +147,8 @@ RS485_DEVICE = {
     "gas_valve": {
         "query":    { "header": 0xAB41, "length":  4, },
         #"state":    { "header": 0xB041, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 처리하기 복잡함
-        "state":    { "header": 0xAD56, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 월패드가 현관 스위치에 보내주는 정보로 확인 가능
+        #"state":    { "header": 0xAD56, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 월패드가 현관 스위치에 보내주는 정보로 확인 가능
+        "state":    { "header": 0xAB41, "length":  8, "parse": {("power", 6, "invert")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 query에서부터 읽어서 처리
         "last":     { },
 
         "power":    { "header": 0xAB78, "length":  4, }, # 0 으로 잠그기만 가능
@@ -197,6 +200,15 @@ DISCOVERY_VIRTUAL = {
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
+        },
+        {
+            "_intg": "switch",
+            "~": "{prefix}/virtual/entrance2/gas",
+            "name": "가스차단",
+            "obj_id": "{prefix}_new_gas_cutoff",
+            "stat_t": "~/state",
+            "cmd_t": "~/command",
+            "icon": "mdi:valve",
         },
     ],
     "intercom": [
