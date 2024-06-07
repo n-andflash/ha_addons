@@ -52,11 +52,13 @@ VIRTUAL_DEVICE = {
 
             # 성공 시 ack들, 무시해도 상관 없...으려나?
             "eva":   { "header1": 0x10, "resp": 0xB041010070, },
+            "gasa":  { "header1": 0x13, "resp": 0xB041010070, },
         },
 
         # 0xCC41에 다르게 응답하는 방법들, 이 경우 월패드가 다시 ack를 보내준다
         "trigger": {
             "ev":    { "ack": 0x10, "ON": 0xB010010120, "next": None, },
+            "gas":   { "ack": 0x13, "ON": 0xB01301015F, "next": None, },
         },
     },
 
@@ -79,8 +81,15 @@ VIRTUAL_DEVICE = {
 
         "trigger": {
             "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public2", "ON"), }, # 통화 시작
-            #"public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("end", "ON"), }, # 문열림
-            "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": None, }, # 문열림
+            "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("public3", "ON"), }, # 문열림, 여러번 시도...
+            "public3": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("public4", "ON"), }, # 문열림, 여러번 시도...
+            "public4": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("public5", "ON"), }, # 문열림, 여러번 시도...
+            "public5": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("public6", "ON"), }, # 문열림, 여러번 시도...
+            "public6": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("public7", "ON"), }, # 문열림, 여러번 시도...
+            "public7": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("public8", "ON"), }, # 문열림, 여러번 시도...
+            "public8": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("public9", "ON"), }, # 문열림, 여러번 시도...
+            "public9": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("public0", "ON"), }, # 문열림, 여러번 시도...
+            "public0": { "ack": 0x3B, "ON": 0xB03B010A, "next": None, }, # 문열림
             "priv_a":  { "ack": 0x36, "ON": 0xB0360107, "next": ("privat2", "ON"), }, # 현관 통화 시작 (초인종 울렸을 때)
             "priv_b":  { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
             "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
@@ -198,6 +207,15 @@ DISCOVERY_VIRTUAL = {
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
+        },
+        {
+            "_intg": "switch",
+            "~": "{prefix}/virtual/entrance2/gas",
+            "name": "가스차단",
+            "obj_id": "{prefix}_new_gas_cutoff",
+            "stat_t": "~/state",
+            "cmd_t": "~/command",
+            "icon": "mdi:valve",
         },
     ],
     "intercom": [
@@ -371,7 +389,12 @@ serial_ack = {}
 last_query = int(0).to_bytes(2, "big")
 last_topic_list = {}
 
-mqtt = paho_mqtt.Client(client_id="sds_wallpad-{}".format(time.time()))
+try:
+    from paho.mqtt.enums import CallbackAPIVersion
+    mqtt = paho_mqtt.Client(CallbackAPIVersion.VERSION1, client_id="sds_wallpad-{}".format(time.time()))
+except Exception as e:
+    mqtt = paho_mqtt.Client(client_id="sds_wallpad-{}".format(time.time()))
+
 mqtt_connected = False
 
 logger = logging.getLogger(__name__)
@@ -708,18 +731,26 @@ def mqtt_virtual(topics, payload):
 
 
 def mqtt_debug(topics, payload):
-    device = topics[2]
+    group = topics[2]
     command = topics[3]
 
-    if (device == "packet"):
+    if (group == "packet"):
         if (command == "send"):
+            try:
+                packet = bytearray.fromhex(payload)
+            except Exception as e:
+                logger.warning("    failed to convert: {}".format(payload))
+                return
+
             # parity는 여기서 재생성
-            packet = bytearray.fromhex(payload)
             packet[-1] = serial_generate_checksum(packet)
             packet = bytes(packet)
 
             logger.info("prepare packet:  {}".format(packet.hex()))
             serial_queue[packet] = time.time()
+            return
+
+    logger.warning("    unknown debug topic: {}".format(topics))
 
 
 def mqtt_device(topics, payload):
@@ -819,6 +850,7 @@ def mqtt_on_connect(mqtt, userdata, flags, rc):
         topic = "{}/virtual/+/+/command".format(prefix)
         logger.info("subscribe {}".format(topic))
         mqtt.subscribe(topic, 0)
+
     if Options["wallpad_mode"] != "off":
         topic = "{}/+/+/+/command".format(prefix)
         logger.info("subscribe {}".format(topic))
