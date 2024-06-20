@@ -21,17 +21,14 @@ VIRTUAL_DEVICE = {
         "default": {
             "init":  { "header1": 0x5A, "resp": 0xB05A006A, }, # 처음 전기가 들어왔거나 한동안 응답을 안했을 때, 이것부터 해야 함
             "query": { "header1": 0x41, "resp": 0xB0560066, }, # 여기에 0xB0410071로 응답하면 gas valve 상태는 전달받지 않음
-            "gas":   { "header1": 0x56, "resp": 0xB0410071, }, # 0xAD41에 항상 0xB041로 응답하면 이게 실행될 일은 없음
             "light": { "header1": 0x52, "resp": 0xB0520163, },
 
             # 성공 시 ack들, 무시해도 상관 없지만...
-            "gasa":  { "header1": 0x55, "resp": 0xB0410071, },
             "eva":   { "header1": 0x2F, "resp": 0xB0410071, },
         },
 
         # 0xAD41에 다르게 응답하는 방법들, 이 경우 월패드가 다시 ack를 보내준다
         "trigger": {
-            "gas":   { "ack": 0x55, "ON": 0xB0550164, "next": None, },
             "ev":    { "ack": 0x2F, "ON": 0xB02F011E, "next": None, },
         },
     },
