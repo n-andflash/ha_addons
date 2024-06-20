@@ -290,13 +290,6 @@ DISCOVERY_PAYLOAD = {
         "stat_t": "~/state",
         "cmd_t": "~/command",
     } ],
-    "gas_valve": [ {
-        "_intg": "sensor",
-        "~": "{prefix}/gas_valve/{idn}",
-        "name": "{prefix}_gas_valve_{idn}",
-        "stat_t": "~/power/state",
-        "icon": "mdi:valve",
-    } ],
     "energy": [ {
         "_intg": "sensor",
         "~": "{prefix}/energy/{idn}",
