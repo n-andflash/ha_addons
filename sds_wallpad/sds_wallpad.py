@@ -141,16 +141,6 @@ RS485_DEVICE = {
         "power":    { "header": 0xAD53, "length":  4, "pos": 2, },
     },
 
-    # 부엌 가스 밸브
-    "gas_valve": {
-        "query":    { "header": 0xAB41, "length":  4, },
-        #"state":    { "header": 0xB041, "length":  4, "parse": {("power", 2, "toggle")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 처리하기 복잡함
-        "state":    { "header": 0xAD56, "length":  4, "parse": {("power", 2, "gas_toggle")} }, # 0: 정상, 1: 차단; 월패드가 현관 스위치에 보내주는 정보로 확인 가능
-        "last":     { },
-
-        "power":    { "header": 0xAB78, "length":  4, }, # 0 으로 잠그기만 가능
-    },
-
     # 실시간에너지 0:전기, 1:가스, 2:수도
     "energy": {
         "query":    { "header": 0xAA6F, "length":  4, "id": 2, },
