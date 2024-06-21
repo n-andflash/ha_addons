@@ -20,7 +20,6 @@ VIRTUAL_DEVICE = {
         "resp_size": 4,
         "default": {
             "init":  { "header1": 0x5A, "resp": 0xB05A006A, }, # 처음 전기가 들어왔거나 한동안 응답을 안했을 때, 이것부터 해야 함
-            "query": { "header1": 0x41, "resp": 0xB0560066, }, # 여기에 0xB0410071로 응답하면 gas valve 상태는 전달받지 않음
             "light": { "header1": 0x52, "resp": 0xB0520163, },
 
             # 성공 시 ack들, 무시해도 상관 없지만...
@@ -129,15 +128,6 @@ RS485_DEVICE = {
         "idlecut":  { "header": 0xC64B, "length": 10, "id": 2, "pos": 3, },
     },
 
-    # 일괄조명: 현관 스위치 살아있으면...
-    "cutoff": {
-        "query":    { "header": 0xAD52, "length":  4, },
-        "state":    { "header": 0xB052, "length":  4, "parse": {("power", 2, "toggle")} }, # 1: 정상, 0: 일괄소등
-        "last":     { },
-
-        "power":    { "header": 0xAD53, "length":  4, "pos": 2, },
-    },
-
     # 실시간에너지 0:전기, 1:가스, 2:수도
     "energy": {
         "query":    { "header": 0xAA6F, "length":  4, "id": 2, },
@@ -163,14 +153,6 @@ DISCOVERY_VIRTUAL = {
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
-        },
-        {
-            "_intg": "switch",
-            "~": "{}/virtual/entrance/gas",
-            "name": "{}_gas_cutoff",
-            "stat_t": "~/state",
-            "cmd_t": "~/command",
-            "icon": "mdi:valve",
         },
     ],
     "entrance2": [
@@ -650,10 +632,6 @@ def mqtt_virtual(topics, payload):
     if trigger not in triggers:
         logger.error("    invalid trigger!"); return
 
-    # OFF가 없는데(ev, gas) OFF가 오면, 이전 ON 명령의 시도 중지
-    if payload not in triggers[trigger]:
-        virtual_pop(device, trigger, "ON")
-        return
 
     # 오류 체크 끝났으면 queue 에 넣어둠
     virtual_trigger[device][(trigger, payload)] = time.time()
@@ -986,8 +964,6 @@ def serial_peek_value(parse, packet):
         value = ["", "high", "medium", "low", "auto"][value]
     elif pattern == "heat_toggle":
         value = "heat" if value & 1 else "off"
-    elif pattern == "gas_toggle":
-        value = "차단" if value & 1 else "열림"
     elif pattern == "value":
         pass
     elif pattern == "2Byte":
@@ -1027,7 +1003,7 @@ def serial_new_device(device, idn, packet):
 
             # 실시간 에너지 사용량에는 적절한 이름과 단위를 붙여준다 (단위가 없으면 그래프로 출력이 안됨)
             if device == "energy":
-                payload["name"] = "{}_{}_consumption".format(prefix, ("power", "gas", "water")[idn])
+                payload["name"] = "{}_{}_consumption".format(prefix, ("power", "water")[idn])
                 payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
                 payload["val_tpl"] = ("{{ value }}", "{{ value | float / 100 }}", "{{ value | float / 100 }}")[idn]
                 if idn == 0:
