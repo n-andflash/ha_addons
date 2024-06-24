@@ -914,19 +914,6 @@ def virtual_clear(header):
         virtual_trigger[device][next_trigger] = time.time()
 
 
-def serial_verify_checksum(packet):
-    # 모든 byte를 XOR
-    checksum = 0
-    for b in packet:
-        checksum ^= b
-
-    # parity의 최상위 bit는 항상 0
-    if checksum >= 0x80: checksum -= 0x80
-
-    # 정상
-    return True
-
-
 def serial_generate_checksum(packet):
     # 마지막 제외하고 모든 byte를 XOR
     checksum = 0
