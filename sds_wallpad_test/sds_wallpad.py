@@ -21,17 +21,14 @@ VIRTUAL_DEVICE = {
         "default": {
             "init":  { "header1": 0x5A, "resp": 0xB05A006A, }, # 처음 전기가 들어왔거나 한동안 응답을 안했을 때, 이것부터 해야 함
             "query": { "header1": 0x41, "resp": 0xB0560066, }, # 여기에 0xB0410071로 응답하면 gas valve 상태는 전달받지 않음
-            "gas":   { "header1": 0x56, "resp": 0xB0410071, }, # 0xAD41에 항상 0xB041로 응답하면 이게 실행될 일은 없음
             "light": { "header1": 0x52, "resp": 0xB0520163, },
 
             # 성공 시 ack들, 무시해도 상관 없지만...
-            "gasa":  { "header1": 0x55, "resp": 0xB0410071, },
             "eva":   { "header1": 0x2F, "resp": 0xB0410071, },
         },
 
         # 0xAD41에 다르게 응답하는 방법들, 이 경우 월패드가 다시 ack를 보내준다
         "trigger": {
-            "gas":   { "ack": 0x55, "ON": 0xB0550164, "next": None, },
             "ev":    { "ack": 0x2F, "ON": 0xB02F011E, "next": None, },
         },
     },
@@ -52,13 +49,11 @@ VIRTUAL_DEVICE = {
 
             # 성공 시 ack들, 무시해도 상관 없...으려나?
             "eva":   { "header1": 0x10, "resp": 0xB041010070, },
-            "gasa":  { "header1": 0x13, "resp": 0xB041010070, },
         },
 
         # 0xCC41에 다르게 응답하는 방법들, 이 경우 월패드가 다시 ack를 보내준다
         "trigger": {
             "ev":    { "ack": 0x10, "ON": 0xB010010120, "next": None, },
-            "gas":   { "ack": 0x13, "ON": 0xB01301015F, "next": None, },
         },
     },
 
@@ -150,17 +145,6 @@ RS485_DEVICE = {
         "power":    { "header": 0xAD53, "length":  4, "pos": 2, },
     },
 
-    # 부엌 가스 밸브
-    "gas_valve": {
-        "query":    { "header": 0xAB41, "length":  4, },
-        #"state":    { "header": 0xB041, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 처리하기 복잡함
-        #"state":    { "header": 0xAD56, "length":  4, "parse": {("power", 2, "invert")} }, # 0: 정상, 1: 차단; 월패드가 현관 스위치에 보내주는 정보로 확인 가능
-        "state":    { "header": 0xAB41, "length":  8, "parse": {("power", 6, "invert")} }, # 0: 정상, 1: 차단; 0xB041은 공용 ack이므로 query에서부터 읽어서 처리
-        "last":     { },
-
-        "power":    { "header": 0xAB78, "length":  4, }, # 0 으로 잠그기만 가능
-    },
-
     # 실시간에너지 0:전기, 1:가스, 2:수도
     "energy": {
         "query":    { "header": 0xAA6F, "length":  4, "id": 2, },
@@ -187,15 +171,6 @@ DISCOVERY_VIRTUAL = {
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
-        },
-        {
-            "_intg": "switch",
-            "~": "{prefix}/virtual/entrance/gas",
-            "name": "가스차단",
-            "obj_id": "{prefix}_gas_cutoff",
-            "stat_t": "~/state",
-            "cmd_t": "~/command",
-            "icon": "mdi:valve",
         },
     ],
     "entrance2": [
@@ -335,15 +310,6 @@ DISCOVERY_PAYLOAD = {
         "obj_id": "{prefix}_light_cutoff_{idn}",
         "stat_t": "~/state",
         "cmd_t": "~/command",
-    } ],
-    "gas_valve": [ {
-        "_intg": "switch",
-        "~": "{prefix}/gas_valve/{idn}/power",
-        "name": "가스밸브",
-        "obj_id": "{prefix}_gas_valve_{idn}",
-        "stat_t": "~/state",
-        "cmd_t": "~/command",
-        "icon": "mdi:valve",
     } ],
     "energy": [ {
         "_intg": "sensor",
@@ -765,8 +731,6 @@ def mqtt_device(topics, payload):
         logger.error("    unknown command!"); return
     if payload == "":
         logger.error("    no payload!"); return
-    if device == "gas_valve" and payload == "ON":
-        logger.error("    gas valves cannot be opened remotely!"); return
 
     # 문자열 payload를 패킷으로 변환
     payloads = {
