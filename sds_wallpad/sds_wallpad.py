@@ -913,6 +913,23 @@ def virtual_clear(header):
         next_trigger = triggers[trigger]["next"]
         virtual_trigger[device][next_trigger] = time.time()
 
+def serial_verify_checksum(packet):
+    # 모든 byte를 XOR
+    checksum = 0
+    for b in packet:
+        checksum ^= b
+
+    # parity의 최상위 bit는 항상 0
+    if checksum >= 0x80: checksum -= 0x80
+
+    # checksum이 안맞으면 로그만 찍고 무시
+    if checksum:
+        logger.warning("checksum fail! {}, {:02x}".format(packet.hex(), checksum))
+        return False
+
+    # 정상
+    return True
+
 
 def serial_peek_value(parse, packet):
     attr, pos, pattern = parse
