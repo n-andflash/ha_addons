@@ -923,11 +923,6 @@ def serial_verify_checksum(packet):
     # parity의 최상위 bit는 항상 0
     if checksum >= 0x80: checksum -= 0x80
 
-    # checksum이 안맞으면 로그만 찍고 무시
-    if checksum:
-        logger.warning("checksum fail! {}, {:02x}".format(packet.hex(), checksum))
-        return False
-
     # 정상
     return True
 
