@@ -183,15 +183,6 @@ DISCOVERY_VIRTUAL = {
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
         },
-        {
-            "_intg": "switch",
-            "~": "{prefix}/virtual/entrance2/gas",
-            "name": "가스차단",
-            "obj_id": "{prefix}_new_gas_cutoff",
-            "stat_t": "~/state",
-            "cmd_t": "~/command",
-            "icon": "mdi:valve",
-        },
     ],
     "intercom": [
         {
