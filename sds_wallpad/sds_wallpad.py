@@ -20,6 +20,7 @@ VIRTUAL_DEVICE = {
         "resp_size": 4,
         "default": {
             "init":  { "header1": 0x5A, "resp": 0xB05A006A, }, # 처음 전기가 들어왔거나 한동안 응답을 안했을 때, 이것부터 해야 함
+            "query": { "header1": 0x41, "resp": 0xB0560066, }, # 여기에 0xB0410071로 응답하면 gas valve 상태는 전달받지 않음
             "light": { "header1": 0x52, "resp": 0xB0520163, },
 
             # 성공 시 ack들, 무시해도 상관 없지만...
@@ -75,7 +76,6 @@ VIRTUAL_DEVICE = {
 
         "trigger": {
             "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public2", "ON"), }, # 통화 시작
-            #"public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("end", "ON"), }, # 문열림
             "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": None, }, # 문열림
             "priv_a":  { "ack": 0x36, "ON": 0xB0360107, "next": ("privat2", "ON"), }, # 현관 통화 시작 (초인종 울렸을 때)
             "priv_b":  { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
@@ -128,6 +128,15 @@ RS485_DEVICE = {
         "idlecut":  { "header": 0xC64B, "length": 10, "id": 2, "pos": 3, },
     },
 
+    # 일괄조명: 현관 스위치 살아있으면...
+    "cutoff": {
+        "query":    { "header": 0xAD52, "length":  4, },
+        "state":    { "header": 0xB052, "length":  4, "parse": {("power", 2, "toggle")} }, # 1: 정상, 0: 일괄소등
+        "last":     { },
+
+        "power":    { "header": 0xAD53, "length":  4, "pos": 2, },
+    },
+
     # 실시간에너지 0:전기, 1:가스, 2:수도
     "energy": {
         "query":    { "header": 0xAA6F, "length":  4, "id": 2, },
@@ -138,7 +147,7 @@ RS485_DEVICE = {
 
 DISCOVERY_DEVICE = {
     "ids": ["sds_wallpad",],
-    "name": "sds_wallpad",
+    "name": "SDS월패드",
     "mf": "Samsung SDS",
     "mdl": "Samsung SDS Wallpad",
     "sw": "n-andflash/ha_addons/sds_wallpad",
@@ -148,8 +157,9 @@ DISCOVERY_VIRTUAL = {
     "entrance": [
         {
             "_intg": "switch",
-            "~": "{}/virtual/entrance/ev",
-            "name": "{}_elevator",
+            "~": "{prefix}/virtual/entrance/ev",
+            "name": "엘리베이터",
+            "obj_id": "{prefix}_elevator",
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
@@ -158,8 +168,9 @@ DISCOVERY_VIRTUAL = {
     "entrance2": [
         {
             "_intg": "switch",
-            "~": "{}/virtual/entrance2/ev",
-            "name": "{}_new_elevator",
+            "~": "{prefix}/virtual/entrance2/ev",
+            "name": "엘리베이터",
+            "obj_id": "{prefix}_new_elevator",
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:elevator",
@@ -168,8 +179,9 @@ DISCOVERY_VIRTUAL = {
     "intercom": [
         {
             "_intg": "switch",
-            "~": "{}/virtual/intercom/public",
-            "name": "{}_intercom_public",
+            "~": "{prefix}/virtual/intercom/public",
+            "name": "공동현관",
+            "obj_id": "{prefix}_intercom_public",
             "avty_t": "~/available",
             "stat_t": "~/state",
             "cmd_t": "~/command",
@@ -177,16 +189,18 @@ DISCOVERY_VIRTUAL = {
         },
         {
             "_intg": "switch",
-            "~": "{}/virtual/intercom/private",
-            "name": "{}_intercom_private",
+            "~": "{prefix}/virtual/intercom/private",
+            "name": "현관",
+            "obj_id": "{prefix}_intercom_private",
             "stat_t": "~/state",
             "cmd_t": "~/command",
             "icon": "mdi:door-closed",
         },
         {
             "_intg": "binary_sensor",
-            "~": "{}/virtual/intercom/public",
-            "name": "{}_intercom_public",
+            "~": "{prefix}/virtual/intercom/public",
+            "name": "공동현관 초인종",
+            "obj_id": "{prefix}_intercom_public",
             "dev_cla": "sound",
             "stat_t": "~/available",
             "pl_on": "online",
@@ -194,8 +208,9 @@ DISCOVERY_VIRTUAL = {
         },
         {
             "_intg": "binary_sensor",
-            "~": "{}/virtual/intercom/private",
-            "name": "{}_intercom_private",
+            "~": "{prefix}/virtual/intercom/private",
+            "name": "현관 초인종",
+            "obj_id": "{prefix}_intercom_private",
             "dev_cla": "sound",
             "stat_t": "~/available",
             "pl_on": "online",
@@ -208,7 +223,8 @@ DISCOVERY_PAYLOAD = {
     "light": [ {
         "_intg": "light",
         "~": "{prefix}/light",
-        "name": "_",
+        "name": "조명 {id2}",
+        "obj_id": "{prefix}_light_{id2}",
         "opt": True,
         "stat_t": "~/{idn}/power{bit}/state",
         "cmd_t": "~/{id2}/power/command",
@@ -216,7 +232,8 @@ DISCOVERY_PAYLOAD = {
     "fan": [ {
         "_intg": "fan",
         "~": "{prefix}/fan/{idn}",
-        "name": "{prefix}_fan_{idn}",
+        "name": "환기",
+        "obj_id": "{prefix}_fan_{idn}",
         "opt": True,
         "stat_t": "~/power/state",
         "cmd_t": "~/power/command",
@@ -231,7 +248,8 @@ DISCOVERY_PAYLOAD = {
     "thermostat": [ {
         "_intg": "climate",
         "~": "{prefix}/thermostat/{idn}",
-        "name": "{prefix}_thermostat_{idn}",
+        "name": "난방 {idn}",
+        "obj_id": "{prefix}_thermostat_{idn}",
         "mode_stat_t": "~/power/state",
         "mode_cmd_t": "~/power/command",
         "temp_stat_t": "~/target/state",
@@ -244,7 +262,8 @@ DISCOVERY_PAYLOAD = {
     "plug": [ {
         "_intg": "switch",
         "~": "{prefix}/plug/{idn}/power",
-        "name": "{prefix}_plug_{idn}",
+        "name": "콘센트 {idn} 전원",
+        "obj_id": "{prefix}_plug_{idn}",
         "stat_t": "~/state",
         "cmd_t": "~/command",
         "icon": "mdi:power-plug",
@@ -252,7 +271,8 @@ DISCOVERY_PAYLOAD = {
     {
         "_intg": "switch",
         "~": "{prefix}/plug/{idn}/idlecut",
-        "name": "{prefix}_plug_{idn}_standby_cutoff",
+        "name": "콘센트 {idn} 대기전력차단",
+        "obj_id": "{prefix}_plug_{idn}_standby_cutoff",
         "stat_t": "~/state",
         "cmd_t": "~/command",
         "icon": "mdi:leaf",
@@ -260,7 +280,8 @@ DISCOVERY_PAYLOAD = {
     {
         "_intg": "sensor",
         "~": "{prefix}/plug/{idn}",
-        "name": "{prefix}_plug_{idn}_power_usage",
+        "name": "콘센트 {idn} 전력사용량",
+        "obj_id": "{prefix}_plug_{idn}_power_usage",
         "dev_cla": "power",
         "stat_t": "~/current/state",
         "unit_of_meas": "W",
@@ -268,14 +289,16 @@ DISCOVERY_PAYLOAD = {
     "cutoff": [ {
         "_intg": "switch",
         "~": "{prefix}/cutoff/{idn}/power",
-        "name": "{prefix}_light_cutoff_{idn}",
+        "name": "일괄소등",
+        "obj_id": "{prefix}_light_cutoff_{idn}",
         "stat_t": "~/state",
         "cmd_t": "~/command",
     } ],
     "energy": [ {
         "_intg": "sensor",
         "~": "{prefix}/energy/{idn}",
-        "name": "_",
+        "name": "{kor} 사용량",
+        "obj_id": "{prefix}_{eng}_consumption",
         "stat_t": "~/current/state",
         "unit_of_meas": "_",
         "val_tpl": "_",
@@ -546,10 +569,10 @@ def mqtt_discovery(payload):
 
     # MQTT 통합구성요소에 등록되기 위한 추가 내용
     payload["device"] = DISCOVERY_DEVICE
-    payload["uniq_id"] = payload["name"]
+    payload["uniq_id"] = payload["obj_id"]
 
     # discovery에 등록
-    topic = "homeassistant/{}/sds_wallpad/{}/config".format(intg, payload["name"])
+    topic = "homeassistant/{}/sds_wallpad/{}/config".format(intg, payload["uniq_id"])
     logger.info("Add new device:  {}".format(topic))
     mqtt.publish(topic, json.dumps(payload))
 
@@ -565,8 +588,8 @@ def mqtt_add_virtual():
         prefix = Options["mqtt"]["prefix"]
         for payloads in DISCOVERY_VIRTUAL[ent]:
             payload = payloads.copy()
-            payload["~"] = payload["~"].format(prefix)
-            payload["name"] = payload["name"].format(prefix)
+            payload["~"] = payload["~"].format(prefix=prefix)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix)
 
             mqtt_discovery(payload)
 
@@ -575,8 +598,8 @@ def mqtt_add_virtual():
         prefix = Options["mqtt"]["prefix"]
         for payloads in DISCOVERY_VIRTUAL["intercom"]:
             payload = payloads.copy()
-            payload["~"] = payload["~"].format(prefix)
-            payload["name"] = payload["name"].format(prefix)
+            payload["~"] = payload["~"].format(prefix=prefix)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix)
 
             mqtt_discovery(payload)
 
@@ -592,8 +615,7 @@ def mqtt_init_virtual():
         prefix = Options["mqtt"]["prefix"]
         for payloads in DISCOVERY_VIRTUAL[ent]:
             payload = payloads.copy()
-            payload["~"] = payload["~"].format(prefix)
-            payload["name"] = payload["name"].format(prefix)
+            payload["~"] = payload["~"].format(prefix=prefix)
             topic = payload["~"] + "/state"
             logger.info("initial state:   {} = OFF".format(topic))
             mqtt.publish(topic, "OFF")
@@ -604,9 +626,7 @@ def mqtt_init_virtual():
 
         for payloads in DISCOVERY_VIRTUAL["intercom"]:
             payload = payloads.copy()
-            payload["~"] = payload["~"].format(prefix)
-            payload["name"] = payload["name"].format(prefix)
-
+            payload["~"] = payload["~"].format(prefix=prefix)
             topic = payload["~"] + "/state"
             logger.info("initial state:   {} = OFF".format(topic))
             mqtt.publish(topic, "OFF")
@@ -632,6 +652,10 @@ def mqtt_virtual(topics, payload):
     if trigger not in triggers:
         logger.error("    invalid trigger!"); return
 
+    # OFF가 없는데(ev, gas) OFF가 오면, 이전 ON 명령의 시도 중지
+    if payload not in triggers[trigger]:
+        virtual_pop(device, trigger, "ON")
+        return
 
     # 오류 체크 끝났으면 queue 에 넣어둠
     virtual_trigger[device][(trigger, payload)] = time.time()
@@ -656,18 +680,26 @@ def mqtt_virtual(topics, payload):
 
 
 def mqtt_debug(topics, payload):
-    device = topics[2]
+    group = topics[2]
     command = topics[3]
 
-    if (device == "packet"):
+    if (group == "packet"):
         if (command == "send"):
+            try:
+                packet = bytearray.fromhex(payload)
+            except Exception as e:
+                logger.warning("    failed to convert: {}".format(payload))
+                return
+
             # parity는 여기서 재생성
-            packet = bytearray.fromhex(payload)
             packet[-1] = serial_generate_checksum(packet)
             packet = bytes(packet)
 
             logger.info("prepare packet:  {}".format(packet.hex()))
             serial_queue[packet] = time.time()
+            return
+
+    logger.warning("    unknown debug topic: {}".format(topics))
 
 
 def mqtt_device(topics, payload):
@@ -699,8 +731,8 @@ def mqtt_device(topics, payload):
     packet = bytearray(cmd["length"])
     packet[0] = cmd["header"] >> 8
     packet[1] = cmd["header"] & 0xFF
-    packet[cmd["pos"]] = int(float(payload))
 
+    if "pos" in cmd: packet[cmd["pos"]] = int(float(payload))
     if "id" in cmd: packet[cmd["id"]] = int(idn)
 
     # parity 생성 후 queue 에 넣어둠
@@ -765,6 +797,7 @@ def mqtt_on_connect(mqtt, userdata, flags, rc):
         topic = "{}/virtual/+/+/command".format(prefix)
         logger.info("subscribe {}".format(topic))
         mqtt.subscribe(topic, 0)
+
     if Options["wallpad_mode"] != "off":
         topic = "{}/+/+/+/command".format(prefix)
         logger.info("subscribe {}".format(topic))
@@ -913,6 +946,7 @@ def virtual_clear(header):
         next_trigger = triggers[trigger]["next"]
         virtual_trigger[device][next_trigger] = time.time()
 
+
 def serial_verify_checksum(packet):
     # 모든 byte를 XOR
     checksum = 0
@@ -931,6 +965,18 @@ def serial_verify_checksum(packet):
     return True
 
 
+def serial_generate_checksum(packet):
+    # 마지막 제외하고 모든 byte를 XOR
+    checksum = 0
+    for b in packet[:-1]:
+        checksum ^= b
+
+    # parity의 최상위 bit는 항상 0
+    if checksum >= 0x80: checksum -= 0x80
+
+    return checksum
+
+
 def serial_peek_value(parse, packet):
     attr, pos, pattern = parse
     value = packet[pos]
@@ -943,6 +989,8 @@ def serial_peek_value(parse, packet):
         return res
     elif pattern == "toggle":
         value = "ON" if value & 1 else "OFF"
+    elif pattern == "invert":
+        value = "OFF" if value & 1 else "ON"
     elif pattern == "toggle2":
         value = "ON" if value & 0x10 else "OFF"
     elif pattern == "fan_toggle":
@@ -976,7 +1024,8 @@ def serial_new_device(device, idn, packet):
         for bit in range(0, num):
             payload = DISCOVERY_PAYLOAD[device][0].copy()
             payload["~"] = payload["~"].format(prefix=prefix, idn=idn)
-            payload["name"] = "{}_light_{}".format(prefix, id2+bit)
+            payload["name"] = payload["name"].format(id2=id2)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix, id2=id2+bit)
             payload["stat_t"] = payload["stat_t"].format(idn=idn, bit=bit+1)
             payload["cmd_t"] = payload["cmd_t"].format(id2=id2+bit)
 
@@ -986,13 +1035,17 @@ def serial_new_device(device, idn, packet):
         for payloads in DISCOVERY_PAYLOAD[device]:
             payload = payloads.copy()
             payload["~"] = payload["~"].format(prefix=prefix, idn=idn)
-            payload["name"] = payload["name"].format(prefix=prefix, idn=idn)
+            payload["name"] = payload["name"].format(idn=idn)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix, idn=idn)
 
             # 실시간 에너지 사용량에는 적절한 이름과 단위를 붙여준다 (단위가 없으면 그래프로 출력이 안됨)
             if device == "energy":
-                payload["name"] = "{}_{}_consumption".format(prefix, ("power", "water")[idn])
+                eng = ("power", "gas", "water")[idn]
+                kor = ("전기", "가스", "수도")[idn]
+                payload["name"] = payload["name"].format(kor=kor)
+                payload["obj_id"] = payload["obj_id"].format(prefix=prefix, eng=eng)
                 payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
-                payload["val_tpl"] = ("{{ value }}", "{{ value | float / 100 }}", "{{ value | float / 100 }}")[idn]
+                payload["val_tpl"] = "{{ value | float / {} }}".format(10 ** Options["rs485"]["{}_decimal".format(eng)])
                 if idn == 0:
                     payload["dev_cla"] = "power"
 
