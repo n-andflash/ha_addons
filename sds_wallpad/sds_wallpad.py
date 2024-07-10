@@ -80,14 +80,20 @@ VIRTUAL_DEVICE = {
         },
 
         "trigger": {
-            "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public2", "ON"), }, # 통화 시작
-            #"public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": ("end", "ON"), }, # 문열림
-            "public2": { "ack": 0x3B, "ON": 0xB03B010A, "next": None, }, # 문열림
+            "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public0", "ON"), }, # 통화 시작
+            "public0": { "ack": 0x3B, "ON": 0xB03B010A, "next": None, }, # 문열림
             "priv_a":  { "ack": 0x36, "ON": 0xB0360107, "next": ("privat2", "ON"), }, # 현관 통화 시작 (초인종 울렸을 때)
             "priv_b":  { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
             "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
             "privat2": { "ack": 0x3B, "ON": 0xB03B000B, "next": None, }, # 현관 문열림
             #"end":     { "ack": 0x41, "ON": 0xB0420072, "next": None, }, # 문열림 후, 통화 종료
+
+            # 딜레이 모드 사용 시 통화 유지 대충 구현
+            "pubdelay1": { "ack": 0x41, "ON": 0xB0420072, "next": ("pubdelay2", "ON"), },
+            "pubdelay2": { "ack": 0x41, "ON": 0xB0420072, "next": ("pubdelay3", "ON"), },
+            "pubdelay3": { "ack": 0x41, "ON": 0xB0420072, "next": ("pubdelay4", "ON"), },
+            "pubdelay4": { "ack": 0x41, "ON": 0xB0420072, "next": ("pubdelay5", "ON"), },
+            "pubdelay5": { "ack": 0x41, "ON": 0xB0420072, "next": ("public0", "ON"), },
         },
     },
 }
@@ -606,6 +612,10 @@ def init_virtual_device():
         # availability 관련
         for header_1 in (0x31, 0x32, 0x36, 0x3E):
             virtual_avail.append((VIRTUAL_DEVICE["intercom"]["header0"] << 8) + header_1)
+
+        # delay 옵션 적용
+        if Options["rs485"]["intercom_delay"]:
+            VIRTUAL_DEVICE["intercom"]["trigger"]["public"]["next"] = ("pubdelay1", "ON")
 
 
 def mqtt_discovery(payload):

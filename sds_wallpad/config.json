@@ -42,6 +42,7 @@
 			"early_response": 2,
 			"dump_time": 0,
 			"intercom_header": "A45A",
+			"intercom_delay": false,
 			"power_decimal": 0,
 			"gas_decimal": 2,
 			"water_decimal": 2
@@ -84,6 +85,7 @@
 			"power_decimal": "int(0,4)",
 			"gas_decimal": "int(0,4)",
 			"water_decimal": "int(0,4)"
+			"intercom_delay": "bool",
 		},
 		"log": {
 			"to_file": "bool",
