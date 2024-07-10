@@ -711,18 +711,26 @@ def mqtt_virtual(topics, payload):
 
 
 def mqtt_debug(topics, payload):
-    device = topics[2]
+    group = topics[2]
     command = topics[3]
 
-    if (device == "packet"):
+    if (group == "packet"):
         if (command == "send"):
+            try:
+                packet = bytearray.fromhex(payload)
+            except Exception as e:
+                logger.warning("    failed to convert: {}".format(payload))
+                return
+
             # parity는 여기서 재생성
-            packet = bytearray.fromhex(payload)
             packet[-1] = serial_generate_checksum(packet)
             packet = bytes(packet)
 
             logger.info("prepare packet:  {}".format(packet.hex()))
             serial_queue[packet] = time.time()
+            return
+
+    logger.warning("    unknown debug topic: {}".format(topics))
 
 
 def mqtt_device(topics, payload):
@@ -816,10 +824,16 @@ def mqtt_on_connect(mqtt, userdata, flags, rc):
     mqtt.subscribe(topic, 0)
 
     prefix = Options["mqtt"]["prefix"]
+
+    topic = "{}/debug/#".format(prefix)
+    logger.info("subscribe {}".format(topic))
+    mqtt.subscribe(topic, 0)
+
     if Options["entrance_mode"] != "off" or Options["intercom_mode"] != "off":
         topic = "{}/virtual/+/+/command".format(prefix)
         logger.info("subscribe {}".format(topic))
         mqtt.subscribe(topic, 0)
+
     if Options["wallpad_mode"] != "off":
         topic = "{}/+/+/+/command".format(prefix)
         logger.info("subscribe {}".format(topic))
