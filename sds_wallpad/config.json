@@ -84,8 +84,8 @@
 			"intercom_header": "str?",
 			"power_decimal": "int(0,4)",
 			"gas_decimal": "int(0,4)",
-			"water_decimal": "int(0,4)"
-			"intercom_delay": "bool",
+			"water_decimal": "int(0,4)",
+			"intercom_delay": "bool"
 		},
 		"log": {
 			"to_file": "bool",
