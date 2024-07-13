@@ -1096,8 +1096,6 @@ def serial_new_device(device, idn, packet):
         for payloads in DISCOVERY_PAYLOAD[device]:
             payload = payloads.copy()
             payload["~"] = payload["~"].format(prefix=prefix, idn=idn)
-            payload["name"] = payload["name"].format(idn=idn)
-            payload["obj_id"] = payload["obj_id"].format(prefix=prefix, idn=idn)
 
             # 실시간 에너지 사용량에는 적절한 이름과 단위를 붙여준다 (단위가 없으면 그래프로 출력이 안됨)
             if device == "energy":
@@ -1109,6 +1107,8 @@ def serial_new_device(device, idn, packet):
                 payload["val_tpl"] = "{{ value | float / {} }}".format(10 ** Options["rs485"]["{}_decimal".format(eng)])
                 if idn == 0:
                     payload["dev_cla"] = "power"
+            payload["name"] = payload["name"].format(idn=idn)
+            payload["obj_id"] = payload["obj_id"].format(prefix=prefix, idn=idn)
 
             mqtt_discovery(payload)
 
