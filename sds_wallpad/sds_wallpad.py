@@ -578,7 +578,7 @@ def init_option(argv):
 def init_virtual_device():
     global virtual_watch
 
-    if Options["entrance_mode"] == "full" or Options["entrance_mode"] == "new":
+    if Options["entrance_mode"] != "off":
         if Options["entrance_mode"] == "new":
             ent = "entrance2"
         else:
@@ -593,6 +593,7 @@ def init_virtual_device():
             for prop in VIRTUAL_DEVICE[ent]["default"].values()
         })
 
+    if Options["entrance_mode"] == "full" or Options["entrance_mode"] == "new":
         # full 모드에서 일괄소등 지원 안함
         STATE_HEADER.pop(RS485_DEVICE["cutoff"]["state"]["header"])
         RS485_DEVICE.pop("cutoff")
