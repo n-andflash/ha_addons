@@ -35,7 +35,7 @@
 #### 현관 스위치 대체 시 추가 연결
 * 동작 조건
     * Configuration에서 entrance\_mode를 "full" 로 변경
-    * **기존 현관 스위치의 RS485 연결을 분리 필요**
+    * **기존 현관 스위치(일괄소등, 가스차단 기능이 있는 스위치)의 RS485 연결을 분리 필요**
     * **EW11 (소켓 통신) 사용 시 지원 불가**
         * EW11에서도 현관 스위치를 분리하지 않고 entrance\_mode를 "minimal" 로 설정하면 엘리베이터 호출에 성공하는 경우가 있습니다.
         * 성공 확률 및 소요시간은 설치 환경마다 다릅니다. 자세한 내용은 아래 [항목 설명](https://github.com/n-andflash/ha_addons/tree/master/sds_wallpad#entrance_mode-off--minimal--full)을 참고하세요.
