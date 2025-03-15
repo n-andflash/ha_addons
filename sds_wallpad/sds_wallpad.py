@@ -1043,30 +1043,34 @@ def serial_peek_value(parse, packet):
     attr, pos, pattern = parse
     value = packet[pos]
 
-    if pattern == "bitmap":
-        res = []
-        for i in range(1, 8+1):
-            res += [("{}{}".format(attr, i), "ON" if value & 1 else "OFF")]
-            value >>= 1
-        return res
-    elif pattern == "toggle":
-        value = "ON" if value & 1 else "OFF"
-    elif pattern == "invert":
-        value = "OFF" if value & 1 else "ON"
-    elif pattern == "toggle2":
-        value = "ON" if value & 0x10 else "OFF"
-    elif pattern == "fan_toggle":
-        value = 5 if value == 0 else 6
-    elif pattern == "fan_speed":
-        value = ["", "high", "medium", "low", "auto"][value]
-    elif pattern == "heat_toggle":
-        value = "heat" if value & 1 else "off"
-    elif pattern == "value":
-        pass
-    elif pattern == "2Byte":
-        value += packet[pos-1] << 8
-    elif pattern == "6decimal":
-        value = packet[pos : pos+3].hex()
+    try:
+        if pattern == "bitmap":
+            res = []
+            for i in range(1, 8+1):
+                res += [("{}{}".format(attr, i), "ON" if value & 1 else "OFF")]
+                value >>= 1
+            return res
+        elif pattern == "toggle":
+            value = "ON" if value & 1 else "OFF"
+        elif pattern == "invert":
+            value = "OFF" if value & 1 else "ON"
+        elif pattern == "toggle2":
+            value = "ON" if value & 0x10 else "OFF"
+        elif pattern == "fan_toggle":
+            value = 5 if value == 0 else 6
+        elif pattern == "fan_speed":
+            value = ["", "high", "medium", "low", "auto"][value]
+        elif pattern == "heat_toggle":
+            value = "heat" if value & 1 else "off"
+        elif pattern == "value":
+            pass
+        elif pattern == "2Byte":
+            value += packet[pos-1] << 8
+        elif pattern == "6decimal":
+            value = packet[pos : pos+3].hex()
+    except:
+        logger.warning("ignore value {} for {}!".format(value, pattern))
+        value = ""
 
     return [(attr, value)]
 
