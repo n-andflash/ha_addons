@@ -733,7 +733,7 @@ def mqtt_virtual(topics, payload):
     # 그동안 조용히 있었어도, 이젠 가로채서 응답해야 함
     if device == "entrance" and Options["entrance_mode"] == "minimal":
         query = VIRTUAL_DEVICE["entrance"]["default"]["query"]
-        virtual_watch[query["header"]] = query["resp"]
+        virtual_watch[(VIRTUAL_DEVICE[device]["header0"] << 8) + query["header1"]] = query["resp"].to_bytes(4, "big")
 
 
 def mqtt_debug(topics, payload):
@@ -942,7 +942,7 @@ def virtual_pop(device, trigger, cmd):
 
     # minimal 모드일 때, 조용해질지 여부
     if not virtual_trigger[device] and Options["entrance_mode"] == "minimal":
-        entrance_watch.pop(query["header"], None)
+        virtual_watch.pop((VIRTUAL_DEVICE[device]["header0"] << 8) + query["header1"], None)
 
 
 def virtual_query(header_0, header_1):
