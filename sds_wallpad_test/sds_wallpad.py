@@ -80,18 +80,20 @@ VIRTUAL_DEVICE = {
         },
 
         "trigger": {
-            "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public2", "ON"), }, # 통화 시작
-            "public2": { "ack": 0x41, "ON": 0xB0420072, "next": ("public3", "ON"), }, # 통화 유지...
-            "public3": { "ack": 0x41, "ON": 0xB0420072, "next": ("public4", "ON"), }, # 통화 유지...
-            "public4": { "ack": 0x41, "ON": 0xB0420072, "next": ("public5", "ON"), }, # 통화 유지...
-            "public5": { "ack": 0x41, "ON": 0xB0420072, "next": ("public6", "ON"), }, # 통화 유지...
-            "public6": { "ack": 0x41, "ON": 0xB0420072, "next": ("public0", "ON"), }, # 통화 유지...
-            "public0": { "ack": 0x3B, "ON": 0xB03B010A, "next": None, }, # 이제 문열림
+            "public":  { "ack": 0x36, "ON": 0xB0360204, "next": ("public0", "ON"), }, # 통화 시작
+            "public0": { "ack": 0x3B, "ON": 0xB03B010A, "next": None, }, # 문열림
             "priv_a":  { "ack": 0x36, "ON": 0xB0360107, "next": ("privat2", "ON"), }, # 현관 통화 시작 (초인종 울렸을 때)
             "priv_b":  { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
             "private": { "ack": 0x35, "ON": 0xB0380008, "next": ("privat2", "ON"), }, # 현관 통화 시작 (평상시)
             "privat2": { "ack": 0x3B, "ON": 0xB03B000B, "next": None, }, # 현관 문열림
             #"end":     { "ack": 0x41, "ON": 0xB0420072, "next": None, }, # 문열림 후, 통화 종료
+
+            # 딜레이 모드 사용 시 통화 유지 대충 구현
+            "pubdelay1": { "ack": 0x41, "ON": 0xB0420072, "next": ("pubdelay2", "ON"), },
+            "pubdelay2": { "ack": 0x41, "ON": 0xB0420072, "next": ("pubdelay3", "ON"), },
+            "pubdelay3": { "ack": 0x41, "ON": 0xB0420072, "next": ("pubdelay4", "ON"), },
+            "pubdelay4": { "ack": 0x41, "ON": 0xB0420072, "next": ("pubdelay5", "ON"), },
+            "pubdelay5": { "ack": 0x41, "ON": 0xB0420072, "next": ("public0", "ON"), },
         },
     },
 }
@@ -386,6 +388,8 @@ serial_ack = {}
 last_query = int(0).to_bytes(2, "big")
 last_topic_list = {}
 
+checksum_fail_counter = 1048576
+
 try:
     from paho.mqtt.enums import CallbackAPIVersion
     mqtt = paho_mqtt.Client(CallbackAPIVersion.VERSION1, client_id="sds_wallpad-{}".format(time.time()))
@@ -576,7 +580,7 @@ def init_option(argv):
 def init_virtual_device():
     global virtual_watch
 
-    if Options["entrance_mode"] == "full" or Options["entrance_mode"] == "new":
+    if Options["entrance_mode"] != "off":
         if Options["entrance_mode"] == "new":
             ent = "entrance2"
         else:
@@ -591,6 +595,7 @@ def init_virtual_device():
             for prop in VIRTUAL_DEVICE[ent]["default"].values()
         })
 
+    if Options["entrance_mode"] == "full" or Options["entrance_mode"] == "new":
         # full 모드에서 일괄소등 지원 안함
         STATE_HEADER.pop(RS485_DEVICE["cutoff"]["state"]["header"])
         RS485_DEVICE.pop("cutoff")
@@ -610,6 +615,10 @@ def init_virtual_device():
         # availability 관련
         for header_1 in (0x31, 0x32, 0x36, 0x3E):
             virtual_avail.append((VIRTUAL_DEVICE["intercom"]["header0"] << 8) + header_1)
+
+        # delay 옵션 적용
+        if Options["rs485"]["intercom_delay"]:
+            VIRTUAL_DEVICE["intercom"]["trigger"]["public"]["next"] = ("pubdelay1", "ON")
 
 
 def mqtt_discovery(payload):
@@ -724,7 +733,7 @@ def mqtt_virtual(topics, payload):
     # 그동안 조용히 있었어도, 이젠 가로채서 응답해야 함
     if device == "entrance" and Options["entrance_mode"] == "minimal":
         query = VIRTUAL_DEVICE["entrance"]["default"]["query"]
-        virtual_watch[query["header"]] = query["resp"]
+        virtual_watch[(query["header0"] << 8) + query["header1"]] = query["resp"].to_bytes(4, "big")
 
 
 def mqtt_debug(topics, payload):
@@ -843,6 +852,11 @@ def mqtt_on_connect(mqtt, userdata, flags, rc):
     mqtt.subscribe(topic, 0)
 
     prefix = Options["mqtt"]["prefix"]
+
+    topic = "{}/debug/#".format(prefix)
+    logger.info("subscribe {}".format(topic))
+    mqtt.subscribe(topic, 0)
+
     if Options["entrance_mode"] != "off" or Options["intercom_mode"] != "off":
         topic = "{}/virtual/+/+/command".format(prefix)
         logger.info("subscribe {}".format(topic))
@@ -928,7 +942,7 @@ def virtual_pop(device, trigger, cmd):
 
     # minimal 모드일 때, 조용해질지 여부
     if not virtual_trigger[device] and Options["entrance_mode"] == "minimal":
-        entrance_watch.pop(query["header"], None)
+        virtual_watch.pop((query["header0"] << 8) + query["header1"], None)
 
 
 def virtual_query(header_0, header_1):
@@ -1008,7 +1022,14 @@ def serial_verify_checksum(packet):
 
     # checksum이 안맞으면 로그만 찍고 무시
     if checksum:
-        logger.warning("checksum fail! {}, {:02x}".format(packet.hex(), checksum))
+        global checksum_fail_counter
+        if checksum_fail_counter < Options["log"]["checksum"]:
+            logger.warning("checksum fail! {}, {:02x}".format(packet.hex(), checksum))
+            if checksum_fail_counter == 0:
+                logger.warning("checksum fail은 정상적인 상황에서도 발생할 수 있으며, 다른 동작에 문제가 없는 경우 무시하시면 됩니다.")
+                logger.warning("빈도 확인을 위해 로그에 {}번 기록됩니다 (설정 가능).".format(Options["log"]["checksum"]))
+            checksum_fail_counter += 1
+
         return False
 
     # 정상
@@ -1031,30 +1052,34 @@ def serial_peek_value(parse, packet):
     attr, pos, pattern = parse
     value = packet[pos]
 
-    if pattern == "bitmap":
-        res = []
-        for i in range(1, 8+1):
-            res += [("{}{}".format(attr, i), "ON" if value & 1 else "OFF")]
-            value >>= 1
-        return res
-    elif pattern == "toggle":
-        value = "ON" if value & 1 else "OFF"
-    elif pattern == "invert":
-        value = "OFF" if value & 1 else "ON"
-    elif pattern == "toggle2":
-        value = "ON" if value & 0x10 else "OFF"
-    elif pattern == "fan_toggle":
-        value = 5 if value == 0 else 6
-    elif pattern == "fan_speed":
-        value = ["", "high", "medium", "low", "auto"][value]
-    elif pattern == "heat_toggle":
-        value = "heat" if value & 1 else "off"
-    elif pattern == "value":
-        pass
-    elif pattern == "2Byte":
-        value += packet[pos-1] << 8
-    elif pattern == "6decimal":
-        value = packet[pos : pos+3].hex()
+    try:
+        if pattern == "bitmap":
+            res = []
+            for i in range(1, 8+1):
+                res += [("{}{}".format(attr, i), "ON" if value & 1 else "OFF")]
+                value >>= 1
+            return res
+        elif pattern == "toggle":
+            value = "ON" if value & 1 else "OFF"
+        elif pattern == "invert":
+            value = "OFF" if value & 1 else "ON"
+        elif pattern == "toggle2":
+            value = "ON" if value & 0x10 else "OFF"
+        elif pattern == "fan_toggle":
+            value = 5 if value == 0 else 6
+        elif pattern == "fan_speed":
+            value = ["", "high", "medium", "low", "auto"][value]
+        elif pattern == "heat_toggle":
+            value = "heat" if value & 1 else "off"
+        elif pattern == "value":
+            pass
+        elif pattern == "2Byte":
+            value += packet[pos-1] << 8
+        elif pattern == "6decimal":
+            value = packet[pos : pos+3].hex()
+    except:
+        logger.warning("ignore value {} for {}!".format(value, pattern))
+        value = ""
 
     return [(attr, value)]
 
@@ -1085,17 +1110,18 @@ def serial_new_device(device, idn, packet):
         for payloads in DISCOVERY_PAYLOAD[device]:
             payload = payloads.copy()
             payload["~"] = payload["~"].format(prefix=prefix, idn=idn)
-            payload["name"] = payload["name"].format(idn=idn)
-            payload["obj_id"] = payload["obj_id"].format(prefix=prefix, idn=idn)
 
-            # 실시간 에너지 사용량에는 적절한 이름과 단위를 붙여준다 (단위가 없으면 그래프로 출력이 안됨)
-            if device == "energy":
+            if device != "energy":
+                payload["name"] = payload["name"].format(idn=idn)
+                payload["obj_id"] = payload["obj_id"].format(prefix=prefix, idn=idn)
+            else:
+                # 실시간 에너지 사용량에는 적절한 이름과 단위를 붙여준다 (단위가 없으면 그래프로 출력이 안됨)
                 eng = ("power", "gas", "water")[idn]
                 kor = ("전기", "가스", "수도")[idn]
                 payload["name"] = payload["name"].format(kor=kor)
                 payload["obj_id"] = payload["obj_id"].format(prefix=prefix, eng=eng)
                 payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
-                payload["val_tpl"] = "{{ value | float / {} }}".format(10 ** Options["rs485"]["{}_decimal".format(eng)])
+                payload["val_tpl"] = "{{{{ value | float / {} }}}}".format(10 ** Options["rs485"]["{}_decimal".format(eng)])
                 if idn == 0:
                     payload["dev_cla"] = "power"
 
@@ -1286,13 +1312,17 @@ def serial_loop():
                     # discovery 속도 문제로 HA에 초기 상태 등록 안되는 경우 있어서, 한번 재등록
                     mqtt_init_state()
 
-                else:
-                    logger.info("running stable...")
-
                 # 스캔이 없거나 적으면, 명령을 내릴 타이밍을 못잡는걸로 판단, 아무때나 닥치는대로 보내봐야한다.
                 if Options["serial_mode"] == "serial" and scan_count < 30:
                     logger.warning("initiate aggressive send mode!", scan_count)
                     send_aggressive = True
+
+            # 애드온 시작 시 성능 문제로 checksum fail 발생하는 경우 많아서 로깅 시작 지연
+            elif loop_count == 40:
+                global checksum_fail_counter
+                if checksum_fail_counter == 1048576:
+                    checksum_fail_counter = 0 
+                logger.info("running stable...")
 
             # HA 재시작한 경우
             elif loop_count > 30 and Options["mqtt"]["_discovery"]:
