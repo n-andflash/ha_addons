@@ -388,6 +388,8 @@ serial_ack = {}
 last_query = int(0).to_bytes(2, "big")
 last_topic_list = {}
 
+checksum_fail_counter = 1048576
+
 try:
     from paho.mqtt.enums import CallbackAPIVersion
     mqtt = paho_mqtt.Client(CallbackAPIVersion.VERSION1, client_id="sds_wallpad-{}".format(time.time()))
@@ -1020,7 +1022,14 @@ def serial_verify_checksum(packet):
 
     # checksum이 안맞으면 로그만 찍고 무시
     if checksum:
-        logger.warning("checksum fail! {}, {:02x}".format(packet.hex(), checksum))
+        global checksum_fail_counter
+        if checksum_fail_counter < Options["log"]["checksum"]:
+            logger.warning("checksum fail! {}, {:02x}".format(packet.hex(), checksum))
+            if checksum_fail_counter == 0:
+                logger.warning("checksum fail은 정상적인 상황에서도 발생할 수 있으며, 다른 동작에 문제가 없는 경우 무시하시면 됩니다.")
+                logger.warning("빈도 확인을 위해 로그에 {}번 기록됩니다 (설정 가능).".format(Options["log"]["checksum"]))
+            checksum_fail_counter += 1
+
         return False
 
     # 정상
@@ -1303,13 +1312,17 @@ def serial_loop():
                     # discovery 속도 문제로 HA에 초기 상태 등록 안되는 경우 있어서, 한번 재등록
                     mqtt_init_state()
 
-                else:
-                    logger.info("running stable...")
-
                 # 스캔이 없거나 적으면, 명령을 내릴 타이밍을 못잡는걸로 판단, 아무때나 닥치는대로 보내봐야한다.
                 if Options["serial_mode"] == "serial" and scan_count < 30:
                     logger.warning("initiate aggressive send mode!", scan_count)
                     send_aggressive = True
+
+            # 애드온 시작 시 성능 문제로 checksum fail 발생하는 경우 많아서 로깅 시작 지연
+            elif loop_count == 40:
+                global checksum_fail_counter
+                if checksum_fail_counter == 1048576:
+                    checksum_fail_counter = 0 
+                logger.info("running stable...")
 
             # HA 재시작한 경우
             elif loop_count > 30 and Options["mqtt"]["_discovery"]:
