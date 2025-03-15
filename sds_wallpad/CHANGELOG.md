@@ -1,5 +1,12 @@
 # 수정 내역 (눌러서 확인하세요)
 
+## 10.4
+
+* EW11 + minimal mode로 엘베호출 시도할때 죽는 현상 수정
+* 여러 bit 에러 발생해서 checksum에 걸리지 않았을때 죽는 경우 보완
+* 애드온 시작 중에는 checksum fail 출력하지 않도록 수정
+* checksum fail 로그 관련 설명과 횟수제한 추가
+
 ## 10.3
 
 * entrance\_mode가 minimal일때 엘리베이터 호출 시도하면 죽는 문제 수정
