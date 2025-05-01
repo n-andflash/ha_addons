@@ -20,6 +20,17 @@
 * 현관 스위치를 대신하여 엘리베이터를 호출하는 기능이 있습니다.
 * MQTT discovery를 이용, 장치별로 yaml 파일을 직접 작성하지 않아도 집에 있는 모든 장치가 HA에 자동으로 추가됩니다.
 
+### 세팅 방법
+
+#### 1. 무선 연결 (socket)
+* EW11 등의 장치를 이용해 TCP socket 통신으로 HA와 연결
+* 장치가 작고 간편하지만, 아래 "기본 연결" 만 지원하고, SDS 월패드 특성 상 타이밍 제어가 필요한 엘리베이터/현관/공동현관 기능은 지원하지 않습니다.
+#### 2. 유선 연결 (serial)
+* USB to RS485 등의 장치를 이용해 HA 동작중인 머신과 유선으로 연결하면 모든 기능을 사용할 수 있습니다.
+* HA 머신까지 유선 연결이 어려운 환경이면 별도로 라즈베리파이에 연결 후 (보조)HA와 애드온을 설정하시고, (메인)HA의 MQTT에 접속하도록 설정하실 수 있습니다.
+* 라즈베리파이를 넣을 공간도 부족하다면 "라즈베리파이 제로 2W" 와 TTL to RS485를 조합하면 크기를 최소화할 수 있습니다.
+    * 다만 이 경우 보조HA를 돌리기엔 성능이 부족하므로 애드온의 파일들만 따로 받아서 리눅스 환경에서 실행하셔야 합니다. run\_standalone.sh 를 한번 실행해서 options\_standalone.json 을 생성한 뒤, 적절히 수정하고 다시 run\_standalone.sh 를 실행하시면 됩니다. 추가 설명이 필요하면 위 Issue에 남겨주세요.
+
 ### 지원 장치
 
 #### 기본 연결
@@ -56,13 +67,10 @@
 
 ## 설치
 
-* 환경 구성에 지식이 있다면 애드온이 아닌 standalone으로도 사용하실 수 있도록 준비해 두었습니다.
-    * 이 경우 run\_standalone.sh 를 한번 실행해서 options\_standalone.json 을 생성한 뒤, 적절히 수정하고 다시 run\_standalone.sh 를 실행하시면 됩니다.
-
 ### 1. 준비 사항
 
 * Mosquitto broker 설치
-    1. 홈어시스턴트의 Supervisor --> Add-on store에서 Mosquitto broker 선택합니다.
+    1. 홈어시스턴트의 애드온 스토어에서 Mosquitto broker 선택합니다.
     2. 설치하기를 누른 후 생기는 구성 탭을 누릅니다.
     3. logins: [] 에 원하는 아이디와 비밀번호를 아래와 같은 형식으로 입력합니다. 저장하기를 누르면 자동으로 세 줄로 분리됩니다.
         * logins: [{username: 아이디, password: 비밀번호}]
@@ -114,10 +122,6 @@
     * 신형 현관스위치 지원하지 않음
 * off: 현관 스위치 관련 기능을 비활성화 합니다. 일반적인 월패드 애드온으로만 동작합니다.
 
-#### wallpad\_mode (on / off)
-* on: 일반적인 월패드 애드온 기능
-* off: 기존 애드온과 함께 쓰고 싶을 때. 이게 정상동작하는지 아직 테스트되지 않음
-
 #### `intercom_mode` (on / off)
 * on: 가상의 인터폰을 추가합니다. 현관문을 열거나, 공동현관 초인종이 울렸을때 공동현관을 열 수 있습니다.
 * off: 인터폰 추가 기능을 비활성화합니다.
@@ -128,10 +132,6 @@
 * Supervisor -> System -> HARDWARE 버튼을 눌러 serial에 적혀있는 장치 이름을 확인해서 적어주세요.
 * USB to RS485를 쓰신다면 /dev/ttyUSB0, TTL to RS485를 쓰신다면 /dev/ttyAMA0 일 가능성이 높습니다.
 * 단, 윈도우 환경이면 COM6 과 같은 형태의 이름을 가지고 있습니다.
-
-#### baudrate, bytesize, parity, stopbits (기본값 9600, 8, E, 1)
-* 기본값으로 두시면 됩니다.
-* 사용 가능한 parity: E, O, N, M, S (Even, Odd, None, Mark, Space)
 
 ### socket: (serial\_mode 가 socket 인 경우)
 
@@ -155,13 +155,7 @@
 #### `user, passwd`
 * Mosquitto의 아이디와 비밀번호를 적어주세요.
 
-#### discovery (true / false)
-* false로 변경하면 HA에 장치를 자동으로 등록하지 않습니다. 필요한 경우만 변경하세요.
-
-#### prefix (기본값: sds)
-* MQTT topic의 시작 단어를 변경합니다. 기본값으로 두시면 됩니다.
-
-### rs485:
+### rs485 (문제가 있을때만 조정):
 #### max\_retry (기본값: 20)
 * 실행한 명령에 대한 성공 응답을 받지 못했을 때, 몇 초 동안 재시도할지 설정합니다. 특히 "minimal" 모드인 경우 큰 값이 필요하지만, 예상치 못한 타이밍에 동작하는 상황을 막으려면 적절한 값을 설정하세요.
 
@@ -181,17 +175,35 @@
 * 일부 환경에서 공동현관 초인종이 울렸을때 통화를 시작하자마자 문열림을 보내면 무시되는 경우가 있습니다.
 * 그럴때 이 옵션을 켜면 통화 2초 유지 후 문을 엽니다.
 
-### log:
-#### to\_file (true / false)
-* false로 설정하면 로그를 파일로 남기지 않습니다.
-* 로그는 매일 자정에 새 파일로 저장되며, 기존 로그는 파일명에 날짜를 붙여 7개까지 보관됩니다.
+<details>
+    <summary>변경할 필요가 거의 없는 설정들 (눌러서 열기)</summary>
 
-#### filename (기본값: /share/sds\_wallpad.log)
-* 로그를 남길 경로와 파일 이름을 지정합니다.
+* mode:
+    * wallpad_mode (on / off)
+        * on: 일반적인 월패드 애드온 기능
+        * off: 기존 애드온과 함께 쓰고 싶을 때. 이게 정상동작하는지 아직 테스트되지 않음
 
-#### checksum (기본값: 20)
-* checksum fail을 로그에 몇번이나 기록할지 지정합니다.
-* 관련 로그를 그냥 무시하려면 0으로 설정하시면 됩니다.
+* serial:
+    * baudrate, bytesize, parity, stopbits (기본값 9600, 8, E, 1)
+        * 기본값으로 두시면 됩니다.
+        * 사용 가능한 parity: E, O, N, M, S (Even, Odd, None, Mark, Space)    
+
+* MQTT:
+    * discovery (true / false)
+        * false로 변경하면 HA에 장치를 자동으로 등록하지 않습니다. 필요한 경우만 변경하세요.
+    * prefix (기본값: sds)
+        * MQTT topic의 시작 단어를 변경합니다. 기본값으로 두시면 됩니다.
+ 
+* log:
+    * to\_file (true / false)
+        * false로 설정하면 로그를 파일로 남기지 않습니다.
+        * 로그는 매일 자정에 새 파일로 저장되며, 기존 로그는 파일명에 날짜를 붙여 7개까지 보관됩니다.
+    * filename (기본값: /share/sds\_wallpad.log)
+        * 로그를 남길 경로와 파일 이름을 지정합니다.
+    * checksum (기본값: 20)
+        * checksum fail을 로그에 몇번이나 기록할지 지정합니다.
+        * 관련 로그를 그냥 무시하려면 0으로 설정하시면 됩니다. 
+</details>
 
 ## 지원
 
@@ -219,6 +231,4 @@
 
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
-[armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg
 [armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
-[i386-shield]: https://img.shields.io/badge/i386-yes-green.svg
