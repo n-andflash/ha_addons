@@ -1,6 +1,6 @@
 # 삼성SDS 월패드 RS485 Add-on (엘리베이터 호출 지원)
 
-![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armhf Architecture][armhf-shield] ![Supports armv7 Architecture][armv7-shield] ![Supports i386 Architecture][i386-shield]
+![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armv7 Architecture][armv7-shield]
 
 * [소개](#소개)
     + [지원 장치](#지원-장치)
@@ -15,10 +15,8 @@
 ## 소개
 
 * [버전별 변경 사항](https://github.com/n-andflash/ha_addons/blob/master/sds_wallpad/CHANGELOG.md)
-
 * 삼성SDS 월패드를 사용하는 집에서, RS485를 이용해 여러 장치들을 제어할 수 있는 애드온입니다.
 * 현관 스위치를 대신하여 엘리베이터를 호출하는 기능이 있습니다.
-* MQTT discovery를 이용, 장치별로 yaml 파일을 직접 작성하지 않아도 집에 있는 모든 장치가 HA에 자동으로 추가됩니다.
 
 ### 세팅 방법
 
@@ -29,7 +27,7 @@
 * USB to RS485 등의 장치를 이용해 HA 동작중인 머신과 유선으로 연결하면 모든 기능을 사용할 수 있습니다.
 * HA 머신까지 유선 연결이 어려운 환경이면 별도로 라즈베리파이에 연결 후 (보조)HA와 애드온을 설정하시고, (메인)HA의 MQTT에 접속하도록 설정하실 수 있습니다.
 * 라즈베리파이를 넣을 공간도 부족하다면 "라즈베리파이 제로 2W" 와 TTL to RS485를 조합하면 크기를 최소화할 수 있습니다.
-    * 다만 이 경우 보조HA를 돌리기엔 성능이 부족하므로 애드온의 파일들만 따로 받아서 리눅스 환경에서 실행하셔야 합니다. run\_standalone.sh 를 한번 실행해서 options\_standalone.json 을 생성한 뒤, 적절히 수정하고 다시 run\_standalone.sh 를 실행하시면 됩니다. 추가 설명이 필요하면 위 Issue에 남겨주세요.
+    * 다만 이 경우 보조HA를 돌리기엔 성능이 부족하므로 애드온의 파일들만 따로 받아서 리눅스 환경에서 실행하셔야 합니다. run\_standalone.sh 를 한번 실행해서 options\_standalone.json 을 생성한 뒤, 적절히 수정하고 다시 run\_standalone.sh 를 실행하시면 됩니다. 추가 설명이 필요하면 위 Issues에 질문 남겨주세요.
 
 ### 지원 장치
 
@@ -155,7 +153,9 @@
 #### `user, passwd`
 * Mosquitto의 아이디와 비밀번호를 적어주세요.
 
-### rs485 (문제가 있을때만 조정):
+<details>
+    <summary><B>rs485: (문제가 있을때만 조정: 눌러서 열기)</B></summary>
+    
 #### max\_retry (기본값: 20)
 * 실행한 명령에 대한 성공 응답을 받지 못했을 때, 몇 초 동안 재시도할지 설정합니다. 특히 "minimal" 모드인 경우 큰 값이 필요하지만, 예상치 못한 타이밍에 동작하는 상황을 막으려면 적절한 값을 설정하세요.
 
@@ -174,40 +174,41 @@
 #### intercom\_delay (기본값: false)
 * 일부 환경에서 공동현관 초인종이 울렸을때 통화를 시작하자마자 문열림을 보내면 무시되는 경우가 있습니다.
 * 그럴때 이 옵션을 켜면 통화 2초 유지 후 문을 엽니다.
+</details>
 
 <details>
-    <summary>변경할 필요가 거의 없는 설정들 (눌러서 열기)</summary>
+    <summary><B>그외 변경할 필요가 거의 없는 설정들 (눌러서 열기)</B></summary>
 
-* mode:
-    * wallpad_mode (on / off)
-        * on: 일반적인 월패드 애드온 기능
-        * off: 기존 애드온과 함께 쓰고 싶을 때. 이게 정상동작하는지 아직 테스트되지 않음
+### mode:
+#### wallpad_mode (on / off)
+* on: 일반적인 월패드 애드온 기능
+* off: 기존 애드온과 함께 쓰고 싶을 때. 이게 정상동작하는지 아직 테스트되지 않음
 
-* serial:
-    * baudrate, bytesize, parity, stopbits (기본값 9600, 8, E, 1)
-        * 기본값으로 두시면 됩니다.
-        * 사용 가능한 parity: E, O, N, M, S (Even, Odd, None, Mark, Space)    
+### serial:
+#### baudrate, bytesize, parity, stopbits (기본값 9600, 8, E, 1)
+* 기본값으로 두시면 됩니다.
+* 사용 가능한 parity: E, O, N, M, S (Even, Odd, None, Mark, Space)    
 
-* MQTT:
-    * discovery (true / false)
-        * false로 변경하면 HA에 장치를 자동으로 등록하지 않습니다. 필요한 경우만 변경하세요.
-    * prefix (기본값: sds)
-        * MQTT topic의 시작 단어를 변경합니다. 기본값으로 두시면 됩니다.
+### MQTT:
+#### discovery (true / false)
+* false로 변경하면 HA에 장치를 자동으로 등록하지 않습니다. 필요한 경우만 변경하세요.
+#### prefix (기본값: sds)
+* MQTT topic의 시작 단어를 변경합니다. 기본값으로 두시면 됩니다.
  
-* log:
-    * to\_file (true / false)
-        * false로 설정하면 로그를 파일로 남기지 않습니다.
-        * 로그는 매일 자정에 새 파일로 저장되며, 기존 로그는 파일명에 날짜를 붙여 7개까지 보관됩니다.
-    * filename (기본값: /share/sds\_wallpad.log)
-        * 로그를 남길 경로와 파일 이름을 지정합니다.
-    * checksum (기본값: 20)
-        * checksum fail을 로그에 몇번이나 기록할지 지정합니다.
-        * 관련 로그를 그냥 무시하려면 0으로 설정하시면 됩니다. 
+### log:
+#### to\_file (true / false)
+* false로 설정하면 로그를 파일로 남기지 않습니다.
+* 로그는 매일 자정에 새 파일로 저장되며, 기존 로그는 파일명에 날짜를 붙여 7개까지 보관됩니다.
+#### filename (기본값: /share/sds\_wallpad.log)
+* 로그를 남길 경로와 파일 이름을 지정합니다.
+#### checksum (기본값: 20)
+* checksum fail을 로그에 몇번이나 기록할지 지정합니다.
+* 관련 로그를 그냥 무시하려면 0으로 설정하시면 됩니다. 
 </details>
 
 ## 지원
 
-* 정확한 지원을 위해서, 글을 쓰실 때 아래 사항들을 포함해 주세요.
+* 문제가 있어서 글을 쓰실 때는 정확한 지원을 위해서 아래 사항들을 포함해 주세요.
     * 실행 로그 (HA의 share 폴더에 최신 로그 파일 (날짜가 써있지 않은 sds\_wallpad.log 파일) 이 있습니다)
     * Configuration 페이지 내용 (MQTT broker password가 있으면 가려주세요)
 * 집마다 패킷이나 장치 구성이 다르므로, 해결을 위해 여러 번의 추가정보 확인 요청이 필요할 수 있습니다.
