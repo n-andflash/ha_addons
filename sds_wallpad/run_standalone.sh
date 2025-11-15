@@ -11,16 +11,16 @@ else
 fi
 
 if which apk >/dev/null; then
-	$SUDO apk add --no-cache python3
-	$SUDO apk add --no-cache py3-pip
-elif which apt >/dev/null; then
-	$SUDO apt install -y python3
-	$SUDO apt install -y python3-pip
+	$SUDO apk update
+	$SUDO apk add --no-cache python3 py3-pip
+	python3 -m pip install --upgrade pip
+	python3 -m pip install pyserial paho-mqtt
+elif which apt-get >/dev/null; then
+	$SUDO apt-get update
+	$SUDO apt-get install -y python3 python3-pip
+	$SUDO apt-get install -y python3-serial python3-paho-mqtt
 fi
 
-python3 -m pip install --upgrade pip
-python3 -m pip install pyserial
-python3 -m pip install paho-mqtt
 
 if [ ! -f $OPTION_FILE ]; then
 	python3 $GENERATE_OPTION_SCRIPT $OPTION_FILE
