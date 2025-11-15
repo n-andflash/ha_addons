@@ -1,5 +1,9 @@
 # 수정 내역 (눌러서 확인하세요)
 
+## 10.5
+
+* HA deprecated 경고 대응: object\_id 대신 default\_entity\_id 전달하도록 변경
+
 ## 10.4
 
 * EW11 + minimal mode로 엘베호출 시도할때 죽는 현상 수정
