@@ -623,10 +623,12 @@ def init_virtual_device():
 
 def mqtt_discovery(payload):
     intg = payload.pop("_intg")
+    obj_id = payload.pop("obj_id")
 
     # MQTT 통합구성요소에 등록되기 위한 추가 내용
     payload["device"] = DISCOVERY_DEVICE
-    payload["uniq_id"] = payload["obj_id"]
+    payload["uniq_id"] = obj_id
+    payload["def_ent_id"] = "{}.{}".format(intg, obj_id)
 
     # discovery에 등록
     topic = "homeassistant/{}/sds_wallpad/{}/config".format(intg, payload["uniq_id"])
