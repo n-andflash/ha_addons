@@ -134,7 +134,7 @@
 | 월패드 | 장치 응답 | 설명 |
 |---|---|---|
 | AE 5A 00 74 | B0 5A 00 6A | 장치 스캔 |
-| AE 7C `GR` 00 00 00 00 `PT` | B0 7C `GR` `TG` `XX` `YY` FF `32` | 난방 상태 확인 |
+| AE 7C `GR` 00 00 00 00 `PT` | B0 7C `GR` `TG` `XX` `YY` FF `PT` | 난방 상태 확인 |
 | AE 7D `GR` `TG` 00 00 00 `PT` | B0 7D `GR` `TG` `XX` `YY` FF `PT` | 난방 켜기/끄기 |
 | AE 7F `GR` `XX` 00 00 00 `PT` | B0 7F `GR` `XX` `XX` `YY` FF `PT` | 난방 온도 설정 |
 
