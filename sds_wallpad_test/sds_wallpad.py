@@ -367,7 +367,7 @@ QUERY_HEADER = {
 }
 
 HEADER_0_STATE = 0xB0
-HEADER_0_FIRST = 0xA1
+HEADER_0_FIRST = 0xAB
 header_0_virtual = {}
 HEADER_1_SCAN = 0x5A
 header_0_first_candidate = [ 0xAB, 0xAC, 0xAD, 0xAE, 0xC2, 0xA5 ]
@@ -623,10 +623,12 @@ def init_virtual_device():
 
 def mqtt_discovery(payload):
     intg = payload.pop("_intg")
+    obj_id = payload.pop("obj_id")
 
     # MQTT 통합구성요소에 등록되기 위한 추가 내용
     payload["device"] = DISCOVERY_DEVICE
-    payload["uniq_id"] = payload["obj_id"]
+    payload["uniq_id"] = obj_id
+    payload["def_ent_id"] = "{}.{}".format(intg, obj_id)
 
     # discovery에 등록
     topic = "homeassistant/{}/sds_wallpad/{}/config".format(intg, payload["uniq_id"])
@@ -733,7 +735,7 @@ def mqtt_virtual(topics, payload):
     # 그동안 조용히 있었어도, 이젠 가로채서 응답해야 함
     if device == "entrance" and Options["entrance_mode"] == "minimal":
         query = VIRTUAL_DEVICE["entrance"]["default"]["query"]
-        virtual_watch[(query["header0"] << 8) + query["header1"]] = query["resp"].to_bytes(4, "big")
+        virtual_watch[(VIRTUAL_DEVICE[device]["header0"] << 8) + query["header1"]] = query["resp"].to_bytes(4, "big")
 
 
 def mqtt_debug(topics, payload):
@@ -942,7 +944,7 @@ def virtual_pop(device, trigger, cmd):
 
     # minimal 모드일 때, 조용해질지 여부
     if not virtual_trigger[device] and Options["entrance_mode"] == "minimal":
-        virtual_watch.pop((query["header0"] << 8) + query["header1"], None)
+        virtual_watch.pop((VIRTUAL_DEVICE[device]["header0"] << 8) + query["header1"], None)
 
 
 def virtual_query(header_0, header_1):
@@ -1090,7 +1092,7 @@ def serial_new_device(device, idn, packet):
     # 조명은 두 id를 조합해서 개수와 번호를 정해야 함
     if device == "light":
         id2 = last_query[3]
-        num = idn >> 4
+        num = max(idn >> 4, 1) # 방 구분이 없는 구형 모델 지원
         try:
             idn = int("{:x}".format(idn))
         except:

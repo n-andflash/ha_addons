@@ -1,5 +1,5 @@
 g
-	"version": "10.3_250315a",
+	"version": "10.5_251224a",
 	"slug": "sds_wallpad_test",
 	"name": "Samsung SDS RS485 Addon Test",
 	"description": "삼성 SDS 월패드용 애드온의 임시 배포 버전입니다. 필요한 경우에만 사용합니다.",
@@ -42,13 +42,15 @@ g
 			"early_response": 2,
 			"dump_time": 0,
 			"intercom_header": "A45A",
+			"intercom_delay": false,
 			"power_decimal": 0,
 			"gas_decimal": 2,
 			"water_decimal": 2
 		},
 		"log": {
 			"to_file": true,
-			"filename": "/share/sds_wallpad.log"
+			"filename": "/share/sds_wallpad.log",
+			"checksum": 20
 		}
 	},
 	"schema": {
@@ -81,13 +83,15 @@ g
 			"early_response": "int(0,3)",
 			"dump_time": "int",
 			"intercom_header": "str?",
-			"power_decimal": "int(0,4)?",
-			"gas_decimal": "int(0,4)?",
-			"water_decimal": "int(0,4)?"
+			"power_decimal": "int(0,4)",
+			"gas_decimal": "int(0,4)",
+			"water_decimal": "int(0,4)",
+			"intercom_delay": "bool"
 		},
 		"log": {
 			"to_file": "bool",
-			"filename": "str"
+			"filename": "str",
+			"checksum": "int?"
 		}
 	}
 }
