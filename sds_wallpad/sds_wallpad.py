@@ -324,6 +324,7 @@ DISCOVERY_PAYLOAD = {
         "name": "콘센트 {idn} 전력사용량",
         "obj_id": "{prefix}_plug_{idn}_power_usage",
         "dev_cla": "power",
+        "stat_cla": "measurement",
         "stat_t": "~/current/state",
         "unit_of_meas": "W",
     } ],
@@ -350,6 +351,8 @@ DISCOVERY_PAYLOAD = {
         "name": "{kor} 사용량",
         "obj_id": "{prefix}_{eng}_consumption",
         "stat_t": "~/current/state",
+        "dev_cla": "_",
+        "stat_cla": "measurement",
         "unit_of_meas": "_",
         "val_tpl": "_",
     } ],
@@ -1123,9 +1126,8 @@ def serial_new_device(device, idn, packet):
                 payload["name"] = payload["name"].format(kor=kor)
                 payload["obj_id"] = payload["obj_id"].format(prefix=prefix, eng=eng)
                 payload["unit_of_meas"] = ("W", "m³/h", "m³/h")[idn]
+                payload["dev_cla"] = ("power", "volume_flow_rate", "volume_flow_rate")[idn]
                 payload["val_tpl"] = "{{{{ value | float / {} }}}}".format(10 ** Options["rs485"]["{}_decimal".format(eng)])
-                if idn == 0:
-                    payload["dev_cla"] = "power"
 
             mqtt_discovery(payload)
 
