@@ -1092,11 +1092,16 @@ def serial_new_device(device, idn, packet):
     # 조명은 두 id를 조합해서 개수와 번호를 정해야 함
     if device == "light":
         id2 = last_query[3]
-        num = max(idn >> 4, 1) # 방 구분이 없는 구형 모델 지원
+        num = idn >> 4
         try:
             idn = int("{:x}".format(idn))
         except:
             logger.warning("invalid packet, light room number {} is not decimal".format(idn))
+
+        # 방 구분이 없는 구형 모델 지원
+        if id2 == 0:
+            id2 = idn
+            num = 1
 
         for bit in range(0, num):
             payload = DISCOVERY_PAYLOAD[device][0].copy()
@@ -1141,6 +1146,10 @@ def serial_receive_state(device, packet):
 
     # 해당 ID의 이전 상태와 같은 경우 바로 무시
     if last.get(idn) == packet:
+        return
+
+    # 가스밸브가 응답없는 경우만 잘못 해석하는 부분 대충 예외처리
+    if device == "gas_valve" and packet[4] != 0xB0:
         return
 
     # 처음 받은 상태인 경우, discovery 용도로 등록한다.
