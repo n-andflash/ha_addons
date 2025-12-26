@@ -1,20 +1,112 @@
+template:
+  # 수도/가스의 integration 센서는 HA MQTT의 이상한 제약 때문에
+  # SDS애드온에서 device_class를 water/gas로 설정할수 없어서,
+  # integration을 만들기 전에 먼저 template으로 한번 더 감싸야 합니다.
+  - sensor:
+    - default_entity_id: sensor.sds_water_template
+      name: "SDS월패드 수도 사용량"
+      device_class: water
+      state_class: total
+      unit_of_measurement: m³
+      icon: mdi:chart-histogram
+      state: "{{ states('sensor.sds_water_integration') | float(0.0) }}"
+    - default_entity_id: sensor.sds_gas_template
+      name: "SDS월패드 가스 사용량"
+      device_class: gas
+      state_class: total
+      unit_of_measurement: m³
+      icon: mdi:chart-histogram
+      state: "{{ states('sensor.sds_gas_integration') | float(0.0)}}"
+
 sensor:
+  # 전기/수도/가스 integration
   - platform: integration
     source: sensor.sds_power_consumption
     name: sds_power_integration
     unit_prefix: 'k'
-    round: 3
+    round: 2
+    max_sub_interval: "00:30:00"
   - platform: integration
     source: sensor.sds_water_consumption
     method: left
     name: sds_water_integration
     round: 2
+    max_sub_interval: "00:30:00"
   - platform: integration
     source: sensor.sds_gas_consumption
     method: left
     name: sds_gas_integration
     round: 2
+    max_sub_interval: "00:30:00"
 
+  # 대기전력차단 스위치 연결된 콘센트의 전력사용량 integration
+  - platform: integration
+    source: sensor.sds_plug_1_power_usage
+    name: sds_plug_1_integration
+    unique_id: sds_plug_1_integration
+    round: 2
+    unit_prefix: k
+    method: left
+    max_sub_interval: "00:30:00"
+  - platform: integration
+    source: sensor.sds_plug_2_power_usage
+    name: sds_plug_2_integration
+    unique_id: sds_plug_2_integration
+    round: 2
+    unit_prefix: k
+    method: left
+    max_sub_interval: "00:30:00"
+  - platform: integration
+    source: sensor.sds_plug_3_power_usage
+    name: sds_plug_3_integration
+    unique_id: sds_plug_3_integration
+    round: 2
+    unit_prefix: k
+    method: left
+    max_sub_interval: "00:30:00"
+  - platform: integration
+    source: sensor.sds_plug_4_power_usage
+    name: sds_plug_4_integration
+    unique_id: sds_plug_4_integration
+    round: 2
+    unit_prefix: k
+    method: left
+    max_sub_interval: "00:30:00"
+  - platform: integration
+    source: sensor.sds_plug_5_power_usage
+    name: sds_plug_5_integration
+    unique_id: sds_plug_5_integration
+    round: 2
+    unit_prefix: k
+    method: left
+    max_sub_interval: "00:30:00"
+  - platform: integration
+    source: sensor.sds_plug_6_power_usage
+    name: sds_plug_6_integration
+    unique_id: sds_plug_6_integration
+    round: 2
+    unit_prefix: k
+    method: left
+    max_sub_interval: "00:30:00"
+  - platform: integration
+    source: sensor.sds_plug_7_power_usage
+    name: sds_plug_7_integration
+    unique_id: sds_plug_7_integration
+    round: 2
+    unit_prefix: k
+    method: left
+    max_sub_interval: "00:30:00"
+  - platform: integration
+    source: sensor.sds_plug_8_power_usage
+    name: sds_plug_8_integration
+    unique_id: sds_plug_8_integration
+    round: 2
+    unit_prefix: k
+    method: left
+    max_sub_interval: "00:30:00"
+
+# 전기/수도/가스 매시간/일간/월간 누적 센서 예시
+# 에너지 대시보드와는 상관 없으며 사용을 원하는 경우에 추가하세요.
 utility_meter:
   sds_power_hourly:
     source: sensor.sds_power_integration
