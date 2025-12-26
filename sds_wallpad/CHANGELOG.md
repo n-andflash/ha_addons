@@ -1,5 +1,15 @@
 # 수정 내역 (눌러서 확인하세요)
 
+## 11
+
+* HA의 에너지 대시보드에 전기/가스/수도 계량기 및 대기전력차단 스위치의 실시간 사용량 추가할 수 있도록 대응
+  * ![에너지 대시보드 예시](https://github.com/n-andflash/ha_addons/raw/master/sds_wallpad/images/sds_energy.png)
+  * 전기/가스/수도의 경우 월패드에 하루/한달 단위 누적 사용량 외에, 현재의 실시간 사용량(유량)도 표시되는 경우에 한해 지원합니다.
+  * [sds\_energy.yaml](https://github.com/n-andflash/ha_addons/blob/master/sds_wallpad/yaml/sds_energy.yaml)을 참고하여 HA에 integration(누적) 센서를 직접 추가하셔야 합니다.
+* 조명 패킷에 방 구분이 아예 없는 구형 월패드 지원
+* 장치 스캔 패킷이 따로 없는 구형 월패드에 가스밸브가 연결되지 않은 경우 다음 패킷을 해석하지 못하는 이슈 수정 (related github issue #13)
+* RS485 라인 여러개로 분리된 구형 월패드에서 좀더 빠르게 정상화되도록 header\_0\_first\_candidate 순서 변경
+
 ## 10.5
 
 * HA deprecated 경고 대응: object\_id 대신 default\_entity\_id 전달하도록 변경
