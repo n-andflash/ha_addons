@@ -1137,6 +1137,7 @@ def serial_new_device(device, idn, packet):
             mqtt_discovery(payload)
 
 
+gas_valve_noresp = 0
 def serial_receive_state(device, packet):
     form = RS485_DEVICE[device]["state"]
     last = RS485_DEVICE[device]["last"]
@@ -1145,6 +1146,21 @@ def serial_receive_state(device, packet):
         idn = packet[form["id"]]
     else:
         idn = 1
+
+    # 가스 밸브는 상태 패킷이 B041 이라 구현하기 쉽게 대충 짰더니 무응답인 경우에 다음 패킷이랑 엉킴
+    # 연결상태가 안좋거나, 상시 AB41-무응답인 구형 월패드가 있어서 적당히 대응
+    global gas_valve_noresp
+    if device == "gas_valve":
+        if packet[4] != 0xB0:
+            if gas_valve_noresp < 20:
+                gas_valve_noresp += 1
+                if gas_valve_noresp == 20:
+                    logger.warning("가스밸브가 응답하지 않는것 같아 앞으로 무시합니다.")
+                    STATE_HEADER.pop(RS485_DEVICE["gas_valve"]["state"]["header"])
+                    RS485_DEVICE.pop("gas_valve")
+            return
+        else:
+            gas_valve_noresp = 100
 
     # 해당 ID의 이전 상태와 같은 경우 바로 무시
     if last.get(idn) == packet:
