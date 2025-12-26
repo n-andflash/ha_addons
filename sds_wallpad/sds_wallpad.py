@@ -1101,6 +1101,11 @@ def serial_new_device(device, idn, packet):
         except:
             logger.warning("invalid packet, light room number {} is not decimal".format(idn))
 
+        # 방 구분이 없는 구형 모델 지원
+        if id2 == 0:
+            id2 = idn
+            num = 1
+
         for bit in range(0, num):
             payload = DISCOVERY_PAYLOAD[device][0].copy()
             payload["~"] = payload["~"].format(prefix=prefix, idn=idn)
