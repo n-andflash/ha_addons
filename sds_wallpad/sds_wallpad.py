@@ -1339,7 +1339,7 @@ def serial_loop():
 
                 # 스캔이 없거나 적으면, 명령을 내릴 타이밍을 못잡는걸로 판단, 아무때나 닥치는대로 보내봐야한다.
                 if Options["serial_mode"] == "serial" and scan_count < 30:
-                    logger.warning("initiate aggressive send mode!", scan_count)
+                    logger.warning("initiate aggressive send mode! scan_count {}", scan_count)
                     send_aggressive = True
 
             # 애드온 시작 시 성능 문제로 checksum fail 발생하는 경우 많아서 로깅 시작 지연
